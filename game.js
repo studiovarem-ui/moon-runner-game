@@ -716,6 +716,12 @@ function drawCharSelect() {
 
     // Next button
     drawButton(GAME_WIDTH - 120, GAME_HEIGHT - 60, 100, 35, '스테이지 ▶', 'toStageSelect');
+
+    // Hint text
+    if (Math.sin(gameTime * 2) > -0.3) {
+        drawText('캐릭터를 선택하거나 아무 곳을 탭하세요', GAME_WIDTH/2, GAME_HEIGHT - 20, '#666677', 8, 'center');
+        drawText('PC: Enter / ← → 키로 조작', GAME_WIDTH/2, GAME_HEIGHT - 8, '#555566', 7, 'center');
+    }
 }
 
 // --- STAGE SELECT SCREEN ---
@@ -1615,10 +1621,22 @@ function handleInput(x, y) {
         case 'stageCleared':
         case 'gameOver':
             // Check button clicks
+            let buttonHit = false;
             for (const btn of uiButtons) {
                 if (gx >= btn.x && gx <= btn.x + btn.w && gy >= btn.y && gy <= btn.y + btn.h) {
                     handleButton(btn);
-                    return;
+                    buttonHit = true;
+                    break;
+                }
+            }
+            // If no button hit, allow tap-to-advance on certain screens
+            if (!buttonHit) {
+                if (gameState === 'charSelect') {
+                    gameState = 'stageSelect';
+                } else if (gameState === 'stageCleared') {
+                    gameState = 'stageSelect';
+                } else if (gameState === 'gameOver') {
+                    gameState = 'stageSelect';
                 }
             }
             break;
@@ -1634,6 +1652,7 @@ function handleButton(btn) {
         case 'selectChar':
             saveData.selectedChar = btn.data;
             saveSave();
+            gameState = 'stageSelect';
             break;
         case 'toStageSelect':
             gameState = 'stageSelect';
