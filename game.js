@@ -1684,57 +1684,78 @@ touchArea.addEventListener('mousedown', (e) => {
     handleInput(e.clientX, e.clientY);
 });
 
-// Keyboard events
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' || e.code === 'ArrowUp') {
+// Keyboard events - using window instead of document for broader capture
+window.addEventListener('keydown', function(e) {
+    const code = e.code;
+    const key = e.key;
+
+    // Prevent default for game keys
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(code)) {
         e.preventDefault();
-        if (gameState === 'playing') {
-            jump();
-        } else if (gameState === 'title') {
+    }
+
+    switch (gameState) {
+        case 'title':
+            // Any key starts
             gameState = 'charSelect';
-        }
-    }
-    if (e.code === 'Enter') {
-        e.preventDefault();
-        if (gameState === 'title') {
-            gameState = 'charSelect';
-        } else if (gameState === 'charSelect') {
-            gameState = 'stageSelect';
-        } else if (gameState === 'stageCleared') {
-            gameState = 'stageSelect';
-        } else if (gameState === 'gameOver') {
-            if (currentStage) initGame(currentStage.id - 1);
-        }
-    }
-    // Number keys 1-5 to start stages (from stage select screen)
-    if (gameState === 'stageSelect') {
-        const num = parseInt(e.key);
-        if (num >= 1 && num <= 5 && STAGES[num-1].unlocked) {
-            initGame(num - 1);
-        }
-    }
-    // Arrow keys for character select
-    if (gameState === 'charSelect') {
-        if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
-            e.preventDefault();
-            const unlockedChars = CHARACTERS.filter(c => saveData.totalDistance >= c.unlockDist);
-            const currentIdx = unlockedChars.findIndex(c => c.id === saveData.selectedChar);
-            let newIdx;
-            if (e.code === 'ArrowRight') {
-                newIdx = (currentIdx + 1) % unlockedChars.length;
-            } else {
-                newIdx = (currentIdx - 1 + unlockedChars.length) % unlockedChars.length;
+            break;
+
+        case 'charSelect':
+            if (code === 'Enter' || code === 'Space') {
+                gameState = 'stageSelect';
+            } else if (code === 'ArrowLeft' || code === 'ArrowRight') {
+                const unlockedChars = CHARACTERS.filter(c => saveData.totalDistance >= c.unlockDist);
+                const currentIdx = unlockedChars.findIndex(c => c.id === saveData.selectedChar);
+                let newIdx;
+                if (code === 'ArrowRight') {
+                    newIdx = (currentIdx + 1) % unlockedChars.length;
+                } else {
+                    newIdx = (currentIdx - 1 + unlockedChars.length) % unlockedChars.length;
+                }
+                saveData.selectedChar = unlockedChars[newIdx].id;
+                saveSave();
+            } else if (code === 'Escape') {
+                gameState = 'title';
             }
-            saveData.selectedChar = unlockedChars[newIdx].id;
-            saveSave();
-        }
+            break;
+
+        case 'stageSelect':
+            if (code === 'Escape') {
+                gameState = 'charSelect';
+            } else {
+                const num = parseInt(key);
+                if (num >= 1 && num <= 5 && STAGES[num-1].unlocked) {
+                    initGame(num - 1);
+                } else if (code === 'Enter' || code === 'Space') {
+                    // Start first unlocked stage
+                    const firstUnlocked = STAGES.findIndex(s => s.unlocked && !saveData.clearedStages.includes(s.id));
+                    const idx = firstUnlocked >= 0 ? firstUnlocked : 0;
+                    if (STAGES[idx].unlocked) initGame(idx);
+                }
+            }
+            break;
+
+        case 'playing':
+            if (code === 'Space' || code === 'ArrowUp') {
+                jump();
+            }
+            break;
+
+        case 'stageCleared':
+            if (code === 'Enter' || code === 'Space') {
+                gameState = 'stageSelect';
+            }
+            break;
+
+        case 'gameOver':
+            if (code === 'Enter' || code === 'Space') {
+                if (currentStage) initGame(currentStage.id - 1);
+            } else if (code === 'Escape') {
+                gameState = 'stageSelect';
+            }
+            break;
     }
-    // Escape to go back
-    if (e.code === 'Escape') {
-        if (gameState === 'charSelect') gameState = 'title';
-        else if (gameState === 'stageSelect') gameState = 'charSelect';
-    }
-});
+}, true);  // useCapture = true to get events before anything else
 
 // ============================================
 // RESIZE HANDLING
@@ -1815,4 +1836,7 @@ function gameLoop(timestamp) {
 
 // Initialize
 initStars();
+// Focus touch area for keyboard input on PC
+touchArea.focus();
+touchArea.addEventListener('click', () => touchArea.focus());
 requestAnimationFrame(gameLoop);
