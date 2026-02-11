@@ -10,29 +10,29 @@ const touchArea = document.getElementById('touch-area');
 // --- CONSTANTS ---
 const GAME_WIDTH = 400;
 const GAME_HEIGHT = 700;
-const LUNAR_GRAVITY = 0.08;  // Very slow gravity (moon = 1/6 earth)
-const JUMP_FORCE = -3.5;
-const GROUND_Y = 580;
-const PIXEL_SCALE = 2;
+const LUNAR_GRAVITY = 0.027;   // 3x slower than before (was 0.08)
+const JUMP_FORCE = -2.2;       // Adjusted for slower gravity - long floaty jump
+const GROUND_Y = 560;
+const SPRITE_SCALE = 1.3;      // 30% bigger sprites
 
 // --- GAME STATE ---
-let gameState = 'title'; // title, charSelect, stageSelect, playing, paused, stageCleared, gameOver
+let gameState = 'title';
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-// --- STAGE DATA ---
+// --- STAGE DATA (speeds reduced ~3x from original) ---
 const STAGES = [
     {
         id: 1,
         name: 'Mare Tranquillitatis',
         nameKo: '고요의 바다',
         description: '아폴로 11호 착륙 지점. 비교적 평탄한 지형.',
-        speed: 0.75,
-        obstacleFreq: 0.012,
-        energyFreq: 0.008,
+        speed: 0.35,
+        obstacleFreq: 0.008,
+        energyFreq: 0.006,
         boosterCount: 5,
-        targetDist: 1000,
+        targetDist: 800,
         bgColor: '#1a1a2e',
         groundColor: '#4a4a5a',
         groundAccent: '#3a3a4a',
@@ -44,11 +44,11 @@ const STAGES = [
         name: 'Oceanus Procellarum',
         nameKo: '폭풍의 대양',
         description: '달에서 가장 큰 바다. 먼지폭풍이 가끔 발생.',
-        speed: 1.0,
-        obstacleFreq: 0.018,
-        energyFreq: 0.006,
+        speed: 0.45,
+        obstacleFreq: 0.011,
+        energyFreq: 0.005,
         boosterCount: 4,
-        targetDist: 1500,
+        targetDist: 1200,
         bgColor: '#151528',
         groundColor: '#555568',
         groundAccent: '#454558',
@@ -60,11 +60,11 @@ const STAGES = [
         name: 'Mare Imbrium',
         nameKo: '비의 바다',
         description: '거대한 크레이터 지역. 운석 낙하 주의!',
-        speed: 1.25,
-        obstacleFreq: 0.022,
-        energyFreq: 0.005,
+        speed: 0.55,
+        obstacleFreq: 0.014,
+        energyFreq: 0.004,
         boosterCount: 3,
-        targetDist: 2000,
+        targetDist: 1600,
         bgColor: '#121225',
         groundColor: '#606075',
         groundAccent: '#505065',
@@ -76,11 +76,11 @@ const STAGES = [
         name: 'Tycho Crater',
         nameKo: '티코 크레이터',
         description: '험난한 크레이터 지대. 화산 활동 흔적!',
-        speed: 1.5,
-        obstacleFreq: 0.028,
-        energyFreq: 0.004,
+        speed: 0.65,
+        obstacleFreq: 0.017,
+        energyFreq: 0.003,
         boosterCount: 2,
-        targetDist: 2500,
+        targetDist: 2000,
         bgColor: '#0e0e20',
         groundColor: '#6a6a80',
         groundAccent: '#5a5a70',
@@ -92,11 +92,11 @@ const STAGES = [
         name: 'Mare Frigoris',
         nameKo: '추위의 바다',
         description: '달의 극지방. 극한의 환경에서 생존하라!',
-        speed: 1.75,
-        obstacleFreq: 0.035,
-        energyFreq: 0.003,
+        speed: 0.75,
+        obstacleFreq: 0.020,
+        energyFreq: 0.002,
         boosterCount: 1,
-        targetDist: 3000,
+        targetDist: 2500,
         bgColor: '#0a0a1a',
         groundColor: '#7a7a90',
         groundAccent: '#6a6a80',
@@ -115,32 +115,32 @@ const CHARACTERS = [
     { id: 'astro3', name: 'Explorer', nameKo: '익스플로러', unlockDist: 15000, type: 'astronaut' },
 ];
 
-// --- MOON FACTS ---
+// --- MOON FACTS (expanded with images/types for card) ---
 const MOON_FACTS = [
-    '달의 중력은 지구의 약 1/6입니다.',
-    '달에서 지구까지의 평균 거리는 384,400km입니다.',
-    '달의 표면 온도는 낮에 127°C, 밤에 -173°C입니다.',
-    '달은 지구 주위를 29.5일에 한 바퀴 돕니다.',
-    '달의 지름은 지구의 약 1/4입니다.',
-    '달에는 대기가 거의 없습니다.',
-    '아폴로 11호는 1969년 7월 20일 달에 착륙했습니다.',
-    '달의 뒷면은 지구에서 볼 수 없습니다.',
-    '달 표면의 어두운 부분을 "바다(Mare)"라고 부릅니다.',
-    '달에서 몸무게는 지구의 약 16.5%입니다.',
-    '달에는 물(얼음)이 존재합니다.',
-    '달의 나이는 약 45억 년입니다.',
-    '닐 암스트롱이 최초로 달을 밟은 인간입니다.',
-    '달 먼지는 매우 미세하고 날카롭습니다.',
-    '달에서는 소리가 전달되지 않습니다.',
+    { title: '달의 중력', text: '달의 중력은 지구의 약 1/6입니다.\n몸무게 60kg인 사람은 달에서 10kg!', icon: 'gravity', color: '#4488FF' },
+    { title: '달까지 거리', text: '달에서 지구까지의 평균 거리는\n384,400km입니다.', icon: 'distance', color: '#44AAFF' },
+    { title: '달의 온도', text: '달의 표면 온도는\n낮에 127°C, 밤에 -173°C입니다.', icon: 'temp', color: '#FF6644' },
+    { title: '달의 공전', text: '달은 지구 주위를\n29.5일에 한 바퀴 돕니다.', icon: 'orbit', color: '#AABB44' },
+    { title: '달의 크기', text: '달의 지름은 3,474km로\n지구의 약 1/4입니다.', icon: 'size', color: '#CC88FF' },
+    { title: '달의 대기', text: '달에는 대기가 거의 없습니다.\n하늘이 항상 검은 이유!', icon: 'atmo', color: '#334466' },
+    { title: 'Apollo 11', text: '아폴로 11호는 1969년 7월 20일\n달에 착륙했습니다.', icon: 'apollo', color: '#FFD700' },
+    { title: '달의 뒷면', text: '달의 뒷면은 지구에서\n볼 수 없습니다. (동주기 자전)', icon: 'darkside', color: '#556688' },
+    { title: '달의 바다', text: '달 표면의 어두운 부분을\n"바다(Mare)"라고 부릅니다.', icon: 'mare', color: '#3355AA' },
+    { title: '달의 나이', text: '달의 나이는 약 45억 년으로\n지구와 거의 같습니다.', icon: 'age', color: '#AA8855' },
+    { title: '닐 암스트롱', text: '닐 암스트롱이 최초로\n달을 밟은 인간입니다.', icon: 'footprint', color: '#DDDDEE' },
+    { title: '달의 먼지', text: '달 먼지(레골리스)는 매우\n미세하고 날카롭습니다.', icon: 'dust', color: '#998877' },
+    { title: '달의 소리', text: '달에서는 소리가 전달되지\n않습니다. (진공 상태)', icon: 'silent', color: '#667788' },
+    { title: '달의 얼음', text: '달의 극지방 크레이터에는\n물(얼음)이 존재합니다.', icon: 'ice', color: '#88DDFF' },
+    { title: '달의 질량', text: '달의 질량은 지구의\n약 1/81입니다.', icon: 'mass', color: '#BB99DD' },
 ];
 
 // --- BADGE DATA ---
 const BADGE_COLORS = [
-    ['#FFD700', '#FFA500'], // Gold/Orange
-    ['#C0C0C0', '#808080'], // Silver/Gray
-    ['#4169E1', '#1E90FF'], // Blue
-    ['#FF4500', '#DC143C'], // Red
-    ['#9400D3', '#8A2BE2'], // Purple
+    ['#FFD700', '#FFA500'],
+    ['#C0C0C0', '#808080'],
+    ['#4169E1', '#1E90FF'],
+    ['#FF4500', '#DC143C'],
+    ['#9400D3', '#8A2BE2'],
 ];
 
 // --- SAVE DATA ---
@@ -157,7 +157,6 @@ function loadSave() {
         const s = localStorage.getItem('moonrunner_save');
         if (s) saveData = JSON.parse(s);
     } catch(e) {}
-    // Update stage unlock status
     STAGES[0].unlocked = true;
     for (let i = 1; i < STAGES.length; i++) {
         STAGES[i].unlocked = saveData.clearedStages.includes(STAGES[i-1].id);
@@ -207,13 +206,14 @@ let stageSelectScroll = 0;
 let charSelectIndex = 0;
 let uiButtons = [];
 let gameTime = 0;
+let gameOverFactIdx = -1; // fixed index for game over
 
 // --- PARALLAX LAYERS ---
 let bgLayers = [
-    { offset: 0, speed: 0.1 }, // far stars
-    { offset: 0, speed: 0.3 }, // mid objects (planets, etc)
-    { offset: 0, speed: 0.6 }, // near mountains
-    { offset: 0, speed: 1.0 }, // ground
+    { offset: 0, speed: 0.1 },
+    { offset: 0, speed: 0.3 },
+    { offset: 0, speed: 0.6 },
+    { offset: 0, speed: 1.0 },
 ];
 
 // ============================================
@@ -236,133 +236,168 @@ function drawPixelCircle(cx, cy, r, color) {
     }
 }
 
-// --- ROVER SPRITE ---
+// Rounded rect helper
+function drawRoundedRect(x, y, w, h, r, fillColor, strokeColor) {
+    x = Math.floor(x); y = Math.floor(y);
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    if (fillColor) { ctx.fillStyle = fillColor; ctx.fill(); }
+    if (strokeColor) { ctx.strokeStyle = strokeColor; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+// --- ROVER SPRITE (scaled by SPRITE_SCALE) ---
 function drawRover(x, y, frame, type = 'rover') {
     const f = Math.floor(frame) % 4;
     x = Math.floor(x);
     y = Math.floor(y);
+    const S = SPRITE_SCALE;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(S, S);
 
     if (type === 'rover') {
         // Body
-        drawPixelRect(x-12, y-16, 24, 10, '#C0C0C0');
-        drawPixelRect(x-10, y-18, 20, 4, '#A0A0B0');
+        drawPixelRect(-12, -16, 24, 10, '#C0C0C0');
+        drawPixelRect(-10, -18, 20, 4, '#A0A0B0');
         // Top equipment
-        drawPixelRect(x-4, y-24, 3, 6, '#808090');
-        drawPixelRect(x-5, y-26, 5, 3, '#909098');
+        drawPixelRect(-4, -24, 3, 6, '#808090');
+        drawPixelRect(-5, -26, 5, 3, '#909098');
         // Antenna
-        drawPixelRect(x+6, y-28, 2, 14, '#707080');
-        drawPixelRect(x+4, y-30, 6, 3, '#FFD700');
+        drawPixelRect(6, -28, 2, 14, '#707080');
+        drawPixelRect(4, -30, 6, 3, '#FFD700');
         // Solar panel
-        drawPixelRect(x-14, y-22, 8, 2, '#4169E1');
-        drawPixelRect(x-14, y-20, 8, 1, '#1E90FF');
+        drawPixelRect(-14, -22, 8, 2, '#4169E1');
+        drawPixelRect(-14, -20, 8, 1, '#1E90FF');
         // Wheels
-        const wheelBounce = f === 1 || f === 3 ? 1 : 0;
-        drawPixelCircle(x-8, y-2+wheelBounce, 4, '#404050');
-        drawPixelCircle(x-8, y-2+wheelBounce, 2, '#505060');
-        drawPixelCircle(x+8, y-2+wheelBounce, 4, '#404050');
-        drawPixelCircle(x+8, y-2+wheelBounce, 2, '#505060');
-        // Wheel spokes animation
+        const wb = f === 1 || f === 3 ? 1 : 0;
+        drawPixelCircle(-8, -2+wb, 5, '#303040');
+        drawPixelCircle(-8, -2+wb, 3, '#505060');
+        drawPixelCircle(8, -2+wb, 5, '#303040');
+        drawPixelCircle(8, -2+wb, 3, '#505060');
+        // Wheel spokes
         if (f % 2 === 0) {
-            drawPixelRect(x-9, y-2+wheelBounce, 2, 1, '#606070');
-            drawPixelRect(x+7, y-2+wheelBounce, 2, 1, '#606070');
+            drawPixelRect(-9, -2+wb, 2, 1, '#707080');
+            drawPixelRect(7, -2+wb, 2, 1, '#707080');
         } else {
-            drawPixelRect(x-8, y-3+wheelBounce, 1, 2, '#606070');
-            drawPixelRect(x+8, y-3+wheelBounce, 1, 2, '#606070');
+            drawPixelRect(-8, -3+wb, 1, 2, '#707080');
+            drawPixelRect(8, -3+wb, 1, 2, '#707080');
         }
         // Camera eye
-        drawPixelRect(x+10, y-16, 4, 3, '#303040');
-        drawPixelRect(x+11, y-15, 2, 1, '#00FF88');
+        drawPixelRect(10, -16, 5, 4, '#303040');
+        drawPixelRect(11, -15, 3, 2, '#00FF88');
     } else {
         // ASTRONAUT
         // Helmet
-        drawPixelRect(x-6, y-30, 12, 12, '#E0E0E8');
-        drawPixelRect(x-4, y-28, 8, 8, '#1a1a3a');
-        drawPixelRect(x-3, y-27, 6, 5, '#2a2a5a');
-        // Visor reflection
-        drawPixelRect(x-2, y-27, 2, 1, '#FFD700');
+        drawPixelRect(-7, -32, 14, 14, '#E0E0E8');
+        drawPixelRect(-5, -30, 10, 10, '#1a1a3a');
+        drawPixelRect(-4, -29, 8, 7, '#2a2a5a');
+        drawPixelRect(-3, -29, 3, 1, '#FFD700');
         // Body/suit
-        drawPixelRect(x-7, y-18, 14, 14, '#E8E8F0');
-        drawPixelRect(x-5, y-16, 10, 10, '#D0D0E0');
+        drawPixelRect(-8, -18, 16, 16, '#E8E8F0');
+        drawPixelRect(-6, -16, 12, 12, '#D0D0E0');
         // Backpack
-        drawPixelRect(x-9, y-17, 3, 10, '#A0A0B0');
-        drawPixelRect(x-10, y-14, 2, 4, '#808090');
+        drawPixelRect(-10, -17, 3, 12, '#A0A0B0');
+        drawPixelRect(-11, -14, 2, 5, '#808090');
         // Arms
-        const armSwing = f % 2 === 0 ? 0 : 1;
-        drawPixelRect(x-9, y-16+armSwing, 3, 8, '#D8D8E8');
-        drawPixelRect(x+6, y-16-armSwing, 3, 8, '#D8D8E8');
+        const as = f % 2 === 0 ? 0 : 1;
+        drawPixelRect(-10, -16+as, 3, 10, '#D8D8E8');
+        drawPixelRect(7, -16-as, 3, 10, '#D8D8E8');
         // Legs
-        const legSwing = f % 2 === 0 ? 1 : -1;
-        drawPixelRect(x-5, y-4, 4, 6+legSwing, '#C8C8D8');
-        drawPixelRect(x+1, y-4, 4, 6-legSwing, '#C8C8D8');
+        const ls = f % 2 === 0 ? 1 : -1;
+        drawPixelRect(-6, -2, 5, 7+ls, '#C8C8D8');
+        drawPixelRect(1, -2, 5, 7-ls, '#C8C8D8');
         // Boots
-        drawPixelRect(x-6, y+2+legSwing, 5, 3, '#505060');
-        drawPixelRect(x, y+2-legSwing, 5, 3, '#505060');
+        drawPixelRect(-7, 5+ls, 6, 3, '#505060');
+        drawPixelRect(0, 5-ls, 6, 3, '#505060');
         // Flag patch
-        drawPixelRect(x-1, y-16, 3, 2, '#FF4444');
-        drawPixelRect(x-1, y-14, 3, 2, '#4444FF');
+        drawPixelRect(-1, -16, 3, 2, '#FF4444');
+        drawPixelRect(-1, -14, 3, 2, '#4444FF');
     }
+
+    ctx.restore();
 }
 
-// --- OBSTACLE SPRITES ---
+// --- OBSTACLE SPRITES (larger + more visible) ---
 function drawRock(x, y, size) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    const s = size || 1;
+    x = Math.floor(x); y = Math.floor(y);
+    const s = (size || 1) * SPRITE_SCALE;
+
+    // Warning glow
+    ctx.globalAlpha = 0.15;
+    drawPixelCircle(x, y - 6*s, 12*s, '#FF4444');
+    ctx.globalAlpha = 1;
+
     // Shadow
-    drawPixelRect(x-8*s, y+2, 16*s, 3, 'rgba(0,0,0,0.3)');
-    // Main rock body
-    drawPixelRect(x-6*s, y-10*s, 12*s, 12*s, '#5a5a6a');
-    drawPixelRect(x-8*s, y-8*s, 16*s, 8*s, '#6a6a7a');
-    drawPixelRect(x-6*s, y-12*s, 10*s, 4*s, '#4a4a5a');
-    // Highlight
-    drawPixelRect(x-4*s, y-10*s, 4*s, 2*s, '#7a7a8a');
-    // Dark spots
-    drawPixelRect(x+2*s, y-6*s, 3*s, 3*s, '#3a3a4a');
+    drawPixelRect(x-10*s, y+2, 20*s, 4, 'rgba(0,0,0,0.4)');
+    // Main rock body - brighter, more contrast
+    drawPixelRect(x-8*s, y-12*s, 16*s, 14*s, '#7a6a5a');
+    drawPixelRect(x-10*s, y-10*s, 20*s, 10*s, '#8a7a6a');
+    drawPixelRect(x-7*s, y-14*s, 14*s, 4*s, '#6a5a4a');
+    // Highlight edge
+    drawPixelRect(x-6*s, y-12*s, 6*s, 2*s, '#aa9a8a');
+    drawPixelRect(x-8*s, y-10*s, 2*s, 6*s, '#9a8a7a');
+    // Dark cracks
+    drawPixelRect(x+2*s, y-8*s, 2*s, 6*s, '#4a3a2a');
+    drawPixelRect(x-3*s, y-5*s, 4*s, 2*s, '#4a3a2a');
+    // Top warning stripe
+    drawPixelRect(x-4*s, y-14*s, 8*s, 2*s, '#FF8844');
 }
 
 function drawCrater(x, y, width) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    const w = width || 30;
+    x = Math.floor(x); y = Math.floor(y);
+    const w = (width || 35) * SPRITE_SCALE;
+    // Outer danger rim
+    drawPixelRect(x-w/2-2, y-4, w+4, 2, '#FF6644');
     // Crater rim
-    drawPixelRect(x-w/2, y-2, w, 2, '#6a6a7a');
+    drawPixelRect(x-w/2, y-3, w, 3, '#8a8a9a');
     // Crater hole
-    drawPixelRect(x-w/2+2, y, w-4, 6, '#1a1a2a');
-    drawPixelRect(x-w/2+4, y+2, w-8, 4, '#0a0a1a');
+    drawPixelRect(x-w/2+3, y, w-6, 8, '#0a0a1a');
+    drawPixelRect(x-w/2+5, y+3, w-10, 5, '#050510');
+    // Inner glow
+    drawPixelRect(x-w/4, y+2, w/2, 2, '#1a1a3a');
     // Rim highlight
-    drawPixelRect(x-w/2+2, y-3, w-4, 1, '#8a8a9a');
+    drawPixelRect(x-w/2+3, y-4, w-6, 1, '#aaaabc');
 }
 
 function drawPuddle(x, y, width) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    const w = width || 30;
+    x = Math.floor(x); y = Math.floor(y);
+    const w = (width || 35) * SPRITE_SCALE;
     const shimmer = Math.sin(gameTime * 3) > 0 ? 1 : 0;
-    // Water body
-    drawPixelRect(x-w/2, y-1, w, 5, '#2a4a6a');
-    drawPixelRect(x-w/2+2, y, w-4, 3, '#3a6a9a');
-    // Shimmer
-    drawPixelRect(x-w/4+shimmer*3, y+1, 4, 1, '#5a9aca');
-    drawPixelRect(x+w/4-shimmer*2, y, 3, 1, '#5a9aca');
+
+    // Danger edge
+    drawPixelRect(x-w/2-2, y-2, w+4, 1, '#FF6644');
+    // Water body - more visible
+    drawPixelRect(x-w/2, y-1, w, 7, '#1a3a5a');
+    drawPixelRect(x-w/2+3, y+1, w-6, 4, '#2a5a8a');
+    // Surface shine
+    drawPixelRect(x-w/4+shimmer*4, y+1, 8, 1, '#6abaee');
+    drawPixelRect(x+w/4-shimmer*3, y+2, 6, 1, '#5aaadd');
+    // Bubbles
+    if (Math.sin(gameTime * 5 + x) > 0.5) {
+        drawPixelRect(x-w/6, y-1, 2, 2, '#88ccff');
+    }
 }
 
-// --- ENERGY ITEM ---
+// --- ENERGY ITEM (scaled) ---
 function drawEnergy(x, y, frame) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    const bob = Math.sin(frame * 0.1) * 3;
-    const glow = Math.sin(frame * 0.15) * 0.3 + 0.7;
+    x = Math.floor(x); y = Math.floor(y);
+    const bob = Math.sin(frame * 0.08) * 4;
+    const glow = Math.sin(frame * 0.12) * 0.3 + 0.7;
+    const S = SPRITE_SCALE;
 
     // Glow
     ctx.globalAlpha = glow * 0.3;
-    drawPixelCircle(x, y+bob, 8, '#00FFAA');
+    drawPixelCircle(x, y+bob, 10*S, '#00FFAA');
     ctx.globalAlpha = 1;
 
     // Crystal shape
-    drawPixelRect(x-2, y-6+bob, 4, 12, '#00FF88');
-    drawPixelRect(x-4, y-3+bob, 8, 6, '#00FFAA');
+    drawPixelRect(x-3*S, y-7*S+bob, 6*S, 14*S, '#00FF88');
+    drawPixelRect(x-5*S, y-4*S+bob, 10*S, 8*S, '#00FFAA');
     // Highlight
-    drawPixelRect(x-1, y-4+bob, 2, 4, '#AAFFDD');
+    drawPixelRect(x-2*S, y-5*S+bob, 3*S, 5*S, '#AAFFDD');
+    // Sparkle
+    drawPixelRect(x, y-8*S+bob, 2, 2, '#FFFFFF');
 }
 
 // --- BACKGROUND ELEMENTS ---
@@ -378,27 +413,21 @@ function drawStar(x, y, size, twinkle) {
 }
 
 function drawEarth(x, y, size) {
-    x = Math.floor(x);
-    y = Math.floor(y);
+    x = Math.floor(x); y = Math.floor(y);
     const r = size || 20;
     drawPixelCircle(x, y, r, '#1a4a8a');
     drawPixelCircle(x, y, r-1, '#2a6aaa');
-    // Continents
     drawPixelRect(x-r/2, y-r/3, r/2, r/3, '#2a8a3a');
     drawPixelRect(x+r/4, y-r/4, r/3, r/2, '#3a9a4a');
     drawPixelRect(x-r/4, y+r/6, r/2, r/4, '#2a8a3a');
-    // Clouds
     drawPixelRect(x-r/3, y-r/2, r/2, 2, 'rgba(255,255,255,0.5)');
-    drawPixelRect(x+r/4, y+r/4, r/3, 2, 'rgba(255,255,255,0.4)');
-    // Atmosphere glow
     ctx.globalAlpha = 0.15;
     drawPixelCircle(x, y, r+2, '#88BBFF');
     ctx.globalAlpha = 1;
 }
 
 function drawMountain(x, y, w, h, color) {
-    x = Math.floor(x);
-    y = Math.floor(y);
+    x = Math.floor(x); y = Math.floor(y);
     for (let i = 0; i < h; i++) {
         const ratio = i / h;
         const lineW = Math.floor(w * ratio);
@@ -415,12 +444,10 @@ function drawShootingStar(x, y, len) {
 }
 
 function drawMeteor(x, y, size) {
-    x = Math.floor(x);
-    y = Math.floor(y);
+    x = Math.floor(x); y = Math.floor(y);
     drawPixelCircle(x, y, size, '#8B4513');
     drawPixelCircle(x, y, size-2, '#A0522D');
     drawPixelRect(x-1, y-1, 2, 2, '#CD853F');
-    // Fire trail
     for (let i = 0; i < 5; i++) {
         ctx.globalAlpha = 0.7 - i*0.12;
         drawPixelRect(x+size+i*3, y-size+i*2, 3, 2, i < 2 ? '#FF4500' : '#FF8C00');
@@ -429,109 +456,148 @@ function drawMeteor(x, y, size) {
 }
 
 function drawRocket(x, y) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    // Body
+    x = Math.floor(x); y = Math.floor(y);
     drawPixelRect(x-3, y-12, 6, 16, '#E0E0E0');
     drawPixelRect(x-2, y-14, 4, 4, '#D0D0D0');
-    // Nose
     drawPixelRect(x-1, y-16, 2, 3, '#FF4444');
-    // Window
     drawPixelRect(x-1, y-8, 2, 2, '#4488FF');
-    // Fins
     drawPixelRect(x-5, y, 3, 6, '#FF4444');
     drawPixelRect(x+2, y, 3, 6, '#FF4444');
-    // Flame
     const flicker = Math.random() > 0.5 ? 1 : 0;
     drawPixelRect(x-2, y+4, 4, 4+flicker, '#FF8800');
     drawPixelRect(x-1, y+6, 2, 4+flicker, '#FFCC00');
 }
 
 function drawSpaceship(x, y) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    // Saucer shape
+    x = Math.floor(x); y = Math.floor(y);
     drawPixelRect(x-10, y-2, 20, 4, '#808090');
     drawPixelRect(x-14, y, 28, 3, '#909098');
     drawPixelRect(x-6, y-6, 12, 5, '#A0A0B0');
-    // Dome
     drawPixelRect(x-4, y-9, 8, 4, '#88BBFF');
     drawPixelRect(x-3, y-8, 6, 2, '#AADDFF');
-    // Lights
     const lightOn = Math.sin(gameTime * 5) > 0;
     drawPixelRect(x-12, y+1, 2, 2, lightOn ? '#FF0000' : '#880000');
     drawPixelRect(x+10, y+1, 2, 2, lightOn ? '#00FF00' : '#008800');
-    drawPixelRect(x-2, y+2, 2, 1, lightOn ? '#FFFF00' : '#888800');
+}
+
+// --- CARD ICONS for game over ---
+function drawCardIcon(cx, cy, icon, size) {
+    const s = size || 30;
+    cx = Math.floor(cx); cy = Math.floor(cy);
+
+    switch(icon) {
+        case 'gravity':
+            // Arrow down with moon
+            drawPixelCircle(cx, cy - 8, 10, '#CCCCDD');
+            drawPixelCircle(cx + 3, cy - 10, 3, '#BBBBC8');
+            drawPixelRect(cx - 2, cy + 6, 4, 12, '#4488FF');
+            drawPixelRect(cx - 5, cy + 14, 10, 3, '#4488FF');
+            drawPixelRect(cx - 3, cy + 17, 6, 3, '#4488FF');
+            break;
+        case 'distance':
+            // Earth and moon with line
+            drawPixelCircle(cx - 12, cy, 8, '#2a6aaa');
+            drawPixelRect(cx - 14, cy - 2, 4, 3, '#2a8a3a');
+            drawPixelCircle(cx + 14, cy, 5, '#CCCCDD');
+            ctx.strokeStyle = '#666';
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath(); ctx.moveTo(cx - 4, cy); ctx.lineTo(cx + 9, cy); ctx.stroke();
+            ctx.setLineDash([]);
+            break;
+        case 'temp':
+            // Thermometer
+            drawPixelRect(cx - 2, cy - 15, 4, 22, '#DDDDEE');
+            drawPixelCircle(cx, cy + 10, 5, '#DDDDEE');
+            drawPixelRect(cx - 1, cy - 8, 2, 16, '#FF4444');
+            drawPixelCircle(cx, cy + 10, 3, '#FF4444');
+            break;
+        case 'orbit':
+            drawPixelCircle(cx, cy, 6, '#2a6aaa');
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.ellipse(cx, cy, 18, 10, 0.3, 0, Math.PI * 2); ctx.stroke();
+            drawPixelCircle(cx + 15, cy - 5, 3, '#CCCCDD');
+            break;
+        case 'apollo':
+            // Rocket
+            drawPixelRect(cx - 3, cy - 14, 6, 18, '#E0E0E0');
+            drawPixelRect(cx - 1, cy - 18, 2, 4, '#FF4444');
+            drawPixelRect(cx - 5, cy + 2, 3, 6, '#FF4444');
+            drawPixelRect(cx + 2, cy + 2, 3, 6, '#FF4444');
+            drawPixelRect(cx - 1, cy - 8, 2, 2, '#4488FF');
+            break;
+        case 'footprint':
+            // Boot print
+            drawPixelRect(cx - 4, cy - 10, 8, 4, '#999');
+            drawPixelRect(cx - 3, cy - 6, 6, 10, '#888');
+            drawPixelRect(cx - 5, cy + 4, 10, 4, '#999');
+            drawPixelRect(cx - 2, cy - 4, 1, 8, '#666');
+            drawPixelRect(cx + 1, cy - 4, 1, 8, '#666');
+            break;
+        default:
+            // Generic moon
+            drawPixelCircle(cx, cy, 14, '#CCCCDD');
+            drawPixelCircle(cx, cy, 12, '#DDDDEE');
+            drawPixelCircle(cx - 4, cy - 3, 4, '#BBBBC8');
+            drawPixelCircle(cx + 5, cy + 2, 3, '#C4C4D0');
+            drawPixelCircle(cx - 2, cy + 5, 2, '#BBBBC8');
+            break;
+    }
 }
 
 // --- HUD ---
 function drawHUD() {
     if (!currentStage) return;
 
-    // Top bar background
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, GAME_WIDTH, 44);
 
-    // Stage name
-    drawText(currentStage.nameKo, 8, 12, '#FFD700', 8);
+    drawText(currentStage.nameKo, 8, 12, '#FFD700', 9);
 
-    // Distance
     const dist = Math.floor(distance);
-    drawText(`${dist}m`, GAME_WIDTH - 8, 12, '#FFFFFF', 8, 'right');
+    drawText(`${dist}m`, GAME_WIDTH - 8, 12, '#FFFFFF', 9, 'right');
 
-    // Next base progress bar
     const progress = Math.min(distance / currentStage.targetDist, 1);
-    drawPixelRect(8, 26, GAME_WIDTH - 16, 6, '#1a1a2a');
-    drawPixelRect(8, 26, Math.floor((GAME_WIDTH-16) * progress), 6, '#00FF88');
-    drawPixelRect(8, 26, Math.floor((GAME_WIDTH-16) * progress), 2, '#88FFBB');
-    // Base icon at end
-    drawPixelRect(GAME_WIDTH - 14, 24, 6, 10, '#FFD700');
+    drawPixelRect(8, 26, GAME_WIDTH - 16, 8, '#1a1a2a');
+    drawPixelRect(8, 26, Math.floor((GAME_WIDTH-16) * progress), 8, '#00FF88');
+    drawPixelRect(8, 26, Math.floor((GAME_WIDTH-16) * progress), 3, '#88FFBB');
+    drawPixelRect(GAME_WIDTH - 14, 24, 6, 12, '#FFD700');
 
-    // Next base label
-    drawText('다음기지', 10, 36, '#888888', 6);
+    drawText('다음기지', 10, 38, '#888888', 7);
 
     // Lives (bottom-left)
     for (let i = 0; i < player.lives; i++) {
-        drawHeart(12 + i * 16, GAME_HEIGHT - 28, i < player.lives);
+        drawHeart(14 + i * 20, GAME_HEIGHT - 32, true);
     }
 
     // Booster gauge (bottom-right)
-    drawText('BOOST', GAME_WIDTH - 80, GAME_HEIGHT - 36, '#888888', 6);
+    drawText('BOOST', GAME_WIDTH - 90, GAME_HEIGHT - 40, '#888888', 7);
     for (let i = 0; i < player.maxBooster; i++) {
         const filled = i < player.boosterGauge;
-        drawPixelRect(GAME_WIDTH - 80 + i * 14, GAME_HEIGHT - 28, 10, 12, filled ? '#00AAFF' : '#1a1a3a');
+        drawPixelRect(GAME_WIDTH - 90 + i * 16, GAME_HEIGHT - 30, 12, 14, filled ? '#00AAFF' : '#1a1a3a');
         if (filled) {
-            drawPixelRect(GAME_WIDTH - 80 + i * 14, GAME_HEIGHT - 28, 10, 4, '#44CCFF');
+            drawPixelRect(GAME_WIDTH - 90 + i * 16, GAME_HEIGHT - 30, 12, 5, '#44CCFF');
         }
-        drawPixelRect(GAME_WIDTH - 80 + i * 14, GAME_HEIGHT - 28, 10, 1, '#0066AA');
+        drawPixelRect(GAME_WIDTH - 90 + i * 16, GAME_HEIGHT - 30, 12, 1, '#0066AA');
     }
 }
 
 function drawHeart(x, y, filled) {
     if (filled) {
-        drawPixelRect(x, y+1, 2, 4, '#FF4444');
-        drawPixelRect(x+2, y, 2, 5, '#FF4444');
-        drawPixelRect(x+4, y+1, 2, 4, '#FF4444');
-        drawPixelRect(x+6, y, 2, 5, '#FF4444');
-        drawPixelRect(x+8, y+1, 2, 4, '#FF4444');
-        drawPixelRect(x+2, y+5, 6, 2, '#FF4444');
-        drawPixelRect(x+3, y+7, 4, 1, '#FF4444');
-        drawPixelRect(x+4, y+8, 2, 1, '#FF4444');
-        // Highlight
-        drawPixelRect(x+2, y+1, 2, 2, '#FF8888');
-    } else {
-        drawPixelRect(x+2, y+1, 6, 1, '#444');
-        drawPixelRect(x+1, y+2, 8, 1, '#444');
+        drawPixelRect(x, y+1, 3, 5, '#FF4444');
+        drawPixelRect(x+3, y, 3, 6, '#FF4444');
+        drawPixelRect(x+6, y+1, 3, 5, '#FF4444');
+        drawPixelRect(x+9, y, 3, 6, '#FF4444');
+        drawPixelRect(x+12, y+1, 3, 5, '#FF4444');
+        drawPixelRect(x+3, y+6, 9, 3, '#FF4444');
+        drawPixelRect(x+5, y+9, 5, 2, '#FF4444');
+        drawPixelRect(x+6, y+11, 3, 1, '#FF4444');
+        drawPixelRect(x+3, y+1, 3, 2, '#FF8888');
     }
 }
 
-// --- TEXT RENDERING ---
-const PIXEL_FONT = {};
-function initPixelFont() {
-    // We'll use canvas font rendering with pixelated feel
-}
-
-function drawText(text, x, y, color, size, align, font) {
+// --- TEXT ---
+function drawText(text, x, y, color, size, align) {
     ctx.fillStyle = color || '#FFFFFF';
     ctx.font = `bold ${size || 10}px monospace`;
     ctx.textAlign = align || 'left';
@@ -543,8 +609,6 @@ function drawTextOutline(text, x, y, color, outlineColor, size, align) {
     ctx.font = `bold ${size || 10}px monospace`;
     ctx.textAlign = align || 'left';
     ctx.textBaseline = 'top';
-
-    // Outline
     ctx.fillStyle = outlineColor || '#000000';
     for (let ox = -1; ox <= 1; ox++) {
         for (let oy = -1; oy <= 1; oy++) {
@@ -552,24 +616,43 @@ function drawTextOutline(text, x, y, color, outlineColor, size, align) {
             ctx.fillText(text, Math.floor(x+ox), Math.floor(y+oy));
         }
     }
-    // Main text
     ctx.fillStyle = color || '#FFFFFF';
     ctx.fillText(text, Math.floor(x), Math.floor(y));
+}
+
+function wrapText(text, x, y, maxWidth, lineHeight, color, size, align) {
+    ctx.font = `bold ${size}px monospace`;
+    const lines = text.split('\n');
+    let lineY = y;
+    for (const rawLine of lines) {
+        const chars = rawLine.split('');
+        let line = '';
+        for (let i = 0; i < chars.length; i++) {
+            const testLine = line + chars[i];
+            if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+                drawText(line, x, lineY, color, size, align);
+                line = chars[i];
+                lineY += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        drawText(line, x, lineY, color, size, align);
+        lineY += lineHeight;
+    }
 }
 
 // ============================================
 // SCREENS
 // ============================================
 
-// --- TITLE SCREEN ---
 function updateTitle(dt) {
     titleAnimTimer += dt;
-    titleRoverX += 0.5;
+    titleRoverX += 0.3;
     if (titleRoverX > GAME_WIDTH + 50) titleRoverX = -50;
 }
 
 function drawTitle() {
-    // Background - space gradient
     const grad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
     grad.addColorStop(0, '#050510');
     grad.addColorStop(0.6, '#0a0a2a');
@@ -577,93 +660,68 @@ function drawTitle() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Stars
     for (let i = 0; i < bgStars.length; i++) {
         const s = bgStars[i];
         drawStar(s.x, s.y, s.size, titleAnimTimer * s.speed + s.phase);
     }
 
-    // Large moon in background
     const moonY = 180 + Math.sin(titleAnimTimer * 0.3) * 5;
     drawPixelCircle(GAME_WIDTH/2, moonY, 80, '#C0C0C8');
     drawPixelCircle(GAME_WIDTH/2, moonY, 78, '#D0D0D8');
-    // Craters on moon
     drawPixelCircle(GAME_WIDTH/2 - 20, moonY - 15, 12, '#B0B0B8');
     drawPixelCircle(GAME_WIDTH/2 + 30, moonY + 10, 8, '#B8B8C0');
     drawPixelCircle(GAME_WIDTH/2 - 35, moonY + 25, 6, '#A8A8B0');
     drawPixelCircle(GAME_WIDTH/2 + 10, moonY - 30, 10, '#B5B5BD');
-    drawPixelCircle(GAME_WIDTH/2 + 25, moonY - 20, 5, '#AAABB3');
 
-    // Earth in corner
     drawEarth(GAME_WIDTH - 50, 70, 25);
 
-    // Ground
     drawPixelRect(0, GROUND_Y + 10, GAME_WIDTH, GAME_HEIGHT - GROUND_Y - 10, '#3a3a4a');
     drawPixelRect(0, GROUND_Y + 10, GAME_WIDTH, 3, '#5a5a6a');
-    // Ground details
     for (let i = 0; i < 20; i++) {
         drawPixelRect(i * 22 + 5, GROUND_Y + 15, 8, 2, '#2a2a3a');
-        drawPixelRect(i * 22 + 12, GROUND_Y + 20, 5, 2, '#323242');
     }
 
-    // Animated rover on ground
-    drawRover(titleRoverX, GROUND_Y + 8, titleAnimTimer * 4, 'rover');
-    // Dust trail behind rover
+    drawRover(titleRoverX, GROUND_Y + 8, titleAnimTimer * 3, 'rover');
     for (let i = 0; i < 4; i++) {
         ctx.globalAlpha = 0.3 - i * 0.07;
-        drawPixelRect(titleRoverX - 20 - i*12, GROUND_Y + 6 + i*2, 4, 3, '#8a8a9a');
+        drawPixelRect(titleRoverX - 25 - i*14, GROUND_Y + 6 + i*2, 5, 4, '#8a8a9a');
     }
     ctx.globalAlpha = 1;
 
-    // Title
     const titleY = 350;
     const titleBounce = Math.sin(titleAnimTimer * 1.5) * 3;
 
-    // Title shadow
-    drawTextOutline('MOON', GAME_WIDTH/2, titleY + titleBounce + 2, '#000000', '#000000', 48, 'center');
-    drawTextOutline('RUNNER', GAME_WIDTH/2, titleY + 48 + titleBounce + 2, '#000000', '#000000', 48, 'center');
-
-    // Title text
     drawTextOutline('MOON', GAME_WIDTH/2, titleY + titleBounce, '#FFD700', '#8B6914', 48, 'center');
-    drawTextOutline('RUNNER', GAME_WIDTH/2, titleY + 48 + titleBounce, '#FFFFFF', '#555555', 48, 'center');
+    drawTextOutline('RUNNER', GAME_WIDTH/2, titleY + 50 + titleBounce, '#FFFFFF', '#555555', 48, 'center');
 
-    // Subtitle
-    drawText('Lunar Gravity Explorer', GAME_WIDTH/2, titleY + 105, '#8888AA', 10, 'center');
+    drawText('Lunar Gravity Explorer', GAME_WIDTH/2, titleY + 108, '#8888AA', 10, 'center');
 
-    // Tap to start - blinking
     if (Math.sin(titleAnimTimer * 3) > 0) {
         drawTextOutline('TAP TO START', GAME_WIDTH/2, 540, '#FFFFFF', '#333333', 16, 'center');
     }
 
-    // Version
-    drawText('v1.0', GAME_WIDTH - 10, GAME_HEIGHT - 16, '#333344', 8, 'right');
+    drawText('v1.1', GAME_WIDTH - 10, GAME_HEIGHT - 16, '#333344', 8, 'right');
 }
 
-// --- CHARACTER SELECT SCREEN ---
+// --- CHARACTER SELECT ---
 function drawCharSelect() {
-    // BG
     const grad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
     grad.addColorStop(0, '#08081a');
     grad.addColorStop(1, '#151530');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Stars
     for (let i = 0; i < bgStars.length; i++) {
         const s = bgStars[i];
         drawStar(s.x, s.y, s.size, gameTime * s.speed + s.phase);
     }
 
-    // Title
     drawTextOutline('캐릭터 선택', GAME_WIDTH/2, 30, '#FFD700', '#000', 20, 'center');
     drawText('CHARACTER SELECT', GAME_WIDTH/2, 55, '#8888AA', 8, 'center');
-
-    // Total distance info
     drawText(`총 누적거리: ${Math.floor(saveData.totalDistance)}m`, GAME_WIDTH/2, 80, '#AAAACC', 9, 'center');
 
     uiButtons = [];
 
-    // Character cards
     const cardW = 160;
     const cardH = 140;
     const startY = 110;
@@ -677,72 +735,52 @@ function drawCharSelect() {
         const isUnlocked = saveData.totalDistance >= c.unlockDist;
         const isSelected = saveData.selectedChar === c.id;
 
-        // Card bg
         ctx.fillStyle = isSelected ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)';
         ctx.fillRect(cx, cy, cardW, cardH);
-
-        // Border
         ctx.strokeStyle = isSelected ? '#FFD700' : (isUnlocked ? '#555566' : '#333344');
         ctx.lineWidth = isSelected ? 2 : 1;
         ctx.strokeRect(cx, cy, cardW, cardH);
 
         if (isUnlocked) {
-            // Character preview
-            drawRover(cx + cardW/2, cy + 65, gameTime * 3, c.type === 'rover' ? 'rover' : 'astronaut');
-
-            // Name
+            drawRover(cx + cardW/2, cy + 65, gameTime * 3, c.type);
             drawText(c.nameKo, cx + cardW/2, cy + 90, '#FFFFFF', 10, 'center');
             drawText(c.name, cx + cardW/2, cy + 105, '#888899', 7, 'center');
-
-            // Selected indicator
             if (isSelected) {
                 drawText('✓ SELECTED', cx + cardW/2, cy + 120, '#FFD700', 8, 'center');
             }
-
-            uiButtons.push({
-                x: cx, y: cy, w: cardW, h: cardH,
-                action: 'selectChar', data: c.id
-            });
+            uiButtons.push({ x: cx, y: cy, w: cardW, h: cardH, action: 'selectChar', data: c.id });
         } else {
-            // Locked
             drawText('🔒', cx + cardW/2, cy + 40, '#555566', 24, 'center');
             drawText(c.nameKo, cx + cardW/2, cy + 90, '#555566', 10, 'center');
             drawText(`${c.unlockDist}m 필요`, cx + cardW/2, cy + 108, '#666677', 8, 'center');
         }
     }
 
-    // Back button
     drawButton(20, GAME_HEIGHT - 60, 80, 35, '◀ 뒤로', 'back');
-
-    // Next button
     drawButton(GAME_WIDTH - 120, GAME_HEIGHT - 60, 100, 35, '스테이지 ▶', 'toStageSelect');
 
-    // Hint text
     if (Math.sin(gameTime * 2) > -0.3) {
         drawText('캐릭터를 선택하거나 아무 곳을 탭하세요', GAME_WIDTH/2, GAME_HEIGHT - 20, '#666677', 8, 'center');
         drawText('PC: Enter / ← → 키로 조작', GAME_WIDTH/2, GAME_HEIGHT - 8, '#555566', 7, 'center');
     }
 }
 
-// --- STAGE SELECT SCREEN ---
+// --- STAGE SELECT ---
 function drawStageSelect() {
-    // BG
     const grad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
     grad.addColorStop(0, '#06061a');
     grad.addColorStop(1, '#12122a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Stars
     for (let i = 0; i < bgStars.length; i++) {
         const s = bgStars[i];
         drawStar(s.x, s.y, s.size, gameTime * s.speed + s.phase);
     }
 
-    // Moon map (simplified)
     drawPixelCircle(GAME_WIDTH/2, 130, 70, '#C0C0C8');
     drawPixelCircle(GAME_WIDTH/2, 130, 68, '#D0D0D8');
-    // Stage markers on moon
+
     const stagePositions = [
         { x: GAME_WIDTH/2 + 10, y: 140 },
         { x: GAME_WIDTH/2 - 30, y: 125 },
@@ -758,7 +796,6 @@ function drawStageSelect() {
 
         if (isCleared) {
             drawPixelCircle(sp.x, sp.y, 5, '#00FF88');
-            drawPixelCircle(sp.x, sp.y, 3, '#88FFBB');
         } else if (isUnlocked) {
             const pulse = Math.sin(gameTime * 3) * 0.3 + 0.7;
             ctx.globalAlpha = pulse;
@@ -769,7 +806,6 @@ function drawStageSelect() {
             drawPixelCircle(sp.x, sp.y, 4, '#444455');
         }
 
-        // Connect lines
         if (i > 0) {
             const prev = stagePositions[i-1];
             ctx.strokeStyle = isUnlocked ? '#FFD700' : '#333344';
@@ -783,167 +819,189 @@ function drawStageSelect() {
         }
     }
 
-    // Title
     drawTextOutline('스테이지 지도', GAME_WIDTH/2, 20, '#FFD700', '#000', 18, 'center');
 
     uiButtons = [];
 
-    // Stage cards
     const cardStartY = 220;
     for (let i = 0; i < STAGES.length; i++) {
         const stage = STAGES[i];
         const cy = cardStartY + i * 72;
         const isCleared = saveData.clearedStages.includes(stage.id);
 
-        // Card
         ctx.fillStyle = stage.unlocked ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.02)';
         ctx.fillRect(15, cy, GAME_WIDTH - 30, 62);
-
         ctx.strokeStyle = isCleared ? '#00FF88' : (stage.unlocked ? '#555566' : '#222233');
         ctx.lineWidth = 1;
         ctx.strokeRect(15, cy, GAME_WIDTH - 30, 62);
 
-        // Stage number
         drawTextOutline(`${stage.id}`, 35, cy + 8,
             isCleared ? '#00FF88' : (stage.unlocked ? '#FFD700' : '#444455'), '#000', 22, 'center');
 
-        // Stage name
         drawText(stage.nameKo, 55, cy + 8, stage.unlocked ? '#FFFFFF' : '#555566', 11);
         drawText(stage.name, 55, cy + 24, stage.unlocked ? '#8888AA' : '#333344', 7);
-
-        // Description
         drawText(stage.description, 55, cy + 38, stage.unlocked ? '#777788' : '#333344', 7);
 
-        // Best score
         if (stage.unlocked && saveData.highScores[i] > 0) {
             drawText(`BEST: ${saveData.highScores[i]}m`, GAME_WIDTH - 30, cy + 8, '#FFD700', 8, 'right');
         }
-
-        // Badge
         if (isCleared) {
             drawText('✓ CLEAR', GAME_WIDTH - 30, cy + 42, '#00FF88', 9, 'right');
         }
-
-        // Difficulty dots
         if (stage.unlocked) {
             for (let d = 0; d < 5; d++) {
-                drawPixelRect(GAME_WIDTH - 30 - (5-d)*8, cy + 26, 5, 5,
-                    d < stage.id ? '#FF6644' : '#333344');
+                drawPixelRect(GAME_WIDTH - 30 - (5-d)*8, cy + 26, 5, 5, d < stage.id ? '#FF6644' : '#333344');
             }
-        }
-
-        if (stage.unlocked) {
-            uiButtons.push({
-                x: 15, y: cy, w: GAME_WIDTH - 30, h: 62,
-                action: 'startStage', data: i
-            });
+            uiButtons.push({ x: 15, y: cy, w: GAME_WIDTH - 30, h: 62, action: 'startStage', data: i });
         }
     }
 
-    // Back button
     drawButton(20, GAME_HEIGHT - 55, 80, 35, '◀ 뒤로', 'toCharSelect');
 }
 
-// --- STAGE CLEAR SCREEN ---
+// --- STAGE CLEAR (no spinning stars) ---
 function drawStageClear() {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Stars celebration
-    for (let i = 0; i < 30; i++) {
-        const angle = (gameTime * 0.5 + i * 0.2) % (Math.PI * 2);
-        const r = 50 + i * 5 + Math.sin(gameTime + i) * 20;
-        const sx = GAME_WIDTH/2 + Math.cos(angle) * r;
-        const sy = 200 + Math.sin(angle) * r * 0.4;
-        drawStar(sx, sy, 1 + (i % 3), gameTime * 2 + i);
+    // Simple subtle particles rising
+    for (let i = 0; i < 15; i++) {
+        const px = 30 + (i * 27) % (GAME_WIDTH - 60);
+        const py = GAME_HEIGHT - ((gameTime * 30 + i * 50) % GAME_HEIGHT);
+        ctx.globalAlpha = 0.2 + Math.sin(gameTime + i) * 0.15;
+        drawPixelRect(px, py, 2, 2, '#FFD700');
     }
+    ctx.globalAlpha = 1;
 
-    drawTextOutline('STAGE CLEAR!', GAME_WIDTH/2, 150, '#FFD700', '#8B6914', 28, 'center');
-    drawTextOutline('스테이지 클리어!', GAME_WIDTH/2, 190, '#FFFFFF', '#333', 16, 'center');
+    drawTextOutline('STAGE CLEAR!', GAME_WIDTH/2, 160, '#FFD700', '#8B6914', 28, 'center');
+    drawTextOutline('스테이지 클리어!', GAME_WIDTH/2, 200, '#FFFFFF', '#333', 16, 'center');
 
-    // Distance
-    drawText(`달린 거리: ${Math.floor(distance)}m`, GAME_WIDTH/2, 250, '#AAAACC', 12, 'center');
+    drawText(`달린 거리: ${Math.floor(distance)}m`, GAME_WIDTH/2, 260, '#AAAACC', 12, 'center');
 
-    // Badge
+    // Badge (clean, no orbiting stars)
     if (currentStage) {
         const badgeIdx = currentStage.id - 1;
         const bc = BADGE_COLORS[badgeIdx];
         const bx = GAME_WIDTH/2;
-        const by = 340;
+        const by = 350;
 
-        // Badge circle
-        drawPixelCircle(bx, by, 30, bc[0]);
-        drawPixelCircle(bx, by, 27, bc[1]);
-        drawPixelCircle(bx, by, 24, '#1a1a2a');
+        // Badge outer ring
+        drawPixelCircle(bx, by, 32, bc[0]);
+        drawPixelCircle(bx, by, 28, bc[1]);
+        drawPixelCircle(bx, by, 25, '#1a1a2a');
 
-        // Stage number in badge
-        drawTextOutline(`${currentStage.id}`, bx, by - 8, bc[0], '#000', 20, 'center');
+        // Stage number
+        drawTextOutline(`${currentStage.id}`, bx, by - 8, bc[0], '#000', 22, 'center');
 
-        drawText('뱃지 획득!', bx, by + 40, '#FFD700', 10, 'center');
-        drawText(currentStage.nameKo, bx, by + 55, '#AAAACC', 9, 'center');
+        drawText('뱃지 획득!', bx, by + 42, '#FFD700', 11, 'center');
+        drawText(currentStage.nameKo, bx, by + 58, '#AAAACC', 9, 'center');
     }
 
     uiButtons = [];
-    drawButton(GAME_WIDTH/2 - 60, 450, 120, 40, '계속하기', 'toStageSelect');
+    drawButton(GAME_WIDTH/2 - 60, 460, 120, 40, '계속하기', 'toStageSelect');
 }
 
-// --- GAME OVER SCREEN ---
+// --- GAME OVER (Pokemon card style moon fact) ---
 function drawGameOver() {
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    drawTextOutline('GAME OVER', GAME_WIDTH/2, 150, '#FF4444', '#880000', 32, 'center');
+    drawTextOutline('GAME OVER', GAME_WIDTH/2, 80, '#FF4444', '#880000', 32, 'center');
 
-    // Distance
-    drawText(`달린 거리: ${Math.floor(distance)}m`, GAME_WIDTH/2, 220, '#FFFFFF', 12, 'center');
+    drawText(`달린 거리: ${Math.floor(distance)}m`, GAME_WIDTH/2, 130, '#FFFFFF', 12, 'center');
 
-    // High score
     if (currentStage) {
         const stageIdx = currentStage.id - 1;
         if (distance > saveData.highScores[stageIdx]) {
-            drawText('★ NEW RECORD! ★', GAME_WIDTH/2, 250, '#FFD700', 14, 'center');
+            drawText('★ NEW RECORD! ★', GAME_WIDTH/2, 155, '#FFD700', 14, 'center');
         }
     }
 
-    // Random moon fact
-    const factIdx = Math.floor(gameTime * 7) % MOON_FACTS.length;
-    const fact = MOON_FACTS[factIdx];
+    // --- POKEMON CARD STYLE MOON FACT ---
+    if (gameOverFactIdx < 0) gameOverFactIdx = Math.floor(Math.random() * MOON_FACTS.length);
+    const fact = MOON_FACTS[gameOverFactIdx];
 
-    // Fact box
-    ctx.fillStyle = 'rgba(30,30,60,0.8)';
-    ctx.fillRect(20, 300, GAME_WIDTH - 40, 80);
-    ctx.strokeStyle = '#444466';
+    const cardX = 40;
+    const cardY = 195;
+    const cardW = GAME_WIDTH - 80;
+    const cardH = 280;
+
+    // Card outer border (holographic feel)
+    const hueShift = Math.sin(gameTime) * 20;
+    ctx.save();
+
+    // Card shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(cardX + 4, cardY + 4, cardW, cardH);
+
+    // Card background
+    const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+    cardGrad.addColorStop(0, '#1a1a3a');
+    cardGrad.addColorStop(0.5, '#1e1e40');
+    cardGrad.addColorStop(1, '#1a1a3a');
+    ctx.fillStyle = cardGrad;
+    ctx.fillRect(cardX, cardY, cardW, cardH);
+
+    // Card border
+    ctx.strokeStyle = fact.color;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+    // Inner border
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(20, 300, GAME_WIDTH - 40, 80);
+    ctx.strokeRect(cardX + 6, cardY + 6, cardW - 12, cardH - 12);
 
-    drawText('🌙 달에 대한 사실', GAME_WIDTH/2, 310, '#FFD700', 10, 'center');
+    // Card header ribbon
+    ctx.fillStyle = fact.color;
+    ctx.fillRect(cardX, cardY, cardW, 4);
 
-    // Word wrap the fact
-    wrapText(fact, GAME_WIDTH/2, 335, GAME_WIDTH - 60, 14, '#CCCCDD', 10, 'center');
+    // Title area
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(cardX + 10, cardY + 14, cardW - 20, 22);
+    drawText(`🌙 ${fact.title}`, GAME_WIDTH/2, cardY + 16, fact.color, 12, 'center');
+
+    // Icon area (image section of the card)
+    const iconBgY = cardY + 46;
+    ctx.fillStyle = 'rgba(0,0,20,0.5)';
+    ctx.fillRect(cardX + 15, iconBgY, cardW - 30, 90);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.strokeRect(cardX + 15, iconBgY, cardW - 30, 90);
+
+    // Draw the icon centered
+    drawCardIcon(GAME_WIDTH/2, iconBgY + 45, fact.icon, 30);
+
+    // Separator line
+    ctx.fillStyle = fact.color;
+    ctx.fillRect(cardX + 20, iconBgY + 100, cardW - 40, 2);
+
+    // Description text area
+    const textY = iconBgY + 112;
+    wrapText(fact.text, GAME_WIDTH/2, textY, cardW - 50, 16, '#CCCCDD', 10, 'center');
+
+    // Card category tag
+    ctx.fillStyle = fact.color;
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(cardX + 10, cardY + cardH - 28, 60, 18);
+    ctx.globalAlpha = 1;
+    drawText('MOON', cardX + 14, cardY + cardH - 25, '#FFFFFF', 8);
+
+    // Card number
+    drawText(`#${String(gameOverFactIdx + 1).padStart(2, '0')}/${MOON_FACTS.length}`, cardX + cardW - 55, cardY + cardH - 25, '#666688', 8);
+
+    // Sparkle on card edge
+    if (Math.sin(gameTime * 4) > 0.7) {
+        drawPixelRect(cardX + 2, cardY + 2, 3, 3, '#FFFFFF');
+    }
+    if (Math.sin(gameTime * 3 + 1) > 0.7) {
+        drawPixelRect(cardX + cardW - 5, cardY + cardH - 5, 3, 3, '#FFFFFF');
+    }
+
+    ctx.restore();
 
     uiButtons = [];
-    drawButton(GAME_WIDTH/2 - 70, 420, 140, 40, '다시 도전', 'retry');
-    drawButton(GAME_WIDTH/2 - 70, 475, 140, 40, '스테이지 선택', 'toStageSelect');
-}
-
-function wrapText(text, x, y, maxWidth, lineHeight, color, size, align) {
-    ctx.font = `bold ${size}px monospace`;
-    const words = text.split('');
-    let line = '';
-    let lineY = y;
-
-    for (let i = 0; i < words.length; i++) {
-        const testLine = line + words[i];
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && line.length > 0) {
-            drawText(line, x, lineY, color, size, align);
-            line = words[i];
-            lineY += lineHeight;
-        } else {
-            line = testLine;
-        }
-    }
-    drawText(line, x, lineY, color, size, align);
+    drawButton(GAME_WIDTH/2 - 70, 510, 140, 40, '다시 도전', 'retry');
+    drawButton(GAME_WIDTH/2 - 70, 565, 140, 40, '스테이지 선택', 'toStageSelect');
 }
 
 function drawButton(x, y, w, h, text, action) {
@@ -952,9 +1010,7 @@ function drawButton(x, y, w, h, text, action) {
     ctx.strokeStyle = '#FFD700';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, w, h);
-
     drawText(text, x + w/2, y + h/2 - 6, '#FFFFFF', 11, 'center');
-
     uiButtons.push({ x, y, w, h, action, data: null });
 }
 
@@ -984,6 +1040,7 @@ function initGame(stageIdx) {
     bgObjects = [];
     particles = [];
     groundTiles = [];
+    gameOverFactIdx = -1;
 
     player.y = GROUND_Y;
     player.vy = 0;
@@ -993,12 +1050,11 @@ function initGame(stageIdx) {
     player.lives = 3;
     player.invincible = 0;
     player.animFrame = 0;
+    player.animTimer = 0;
     player.dustParticles = [];
 
-    // Init background layers
     bgLayers.forEach(l => l.offset = 0);
 
-    // Init ground tiles
     for (let i = 0; i < Math.ceil(GAME_WIDTH / 20) + 2; i++) {
         groundTiles.push({
             x: i * 20,
@@ -1007,52 +1063,47 @@ function initGame(stageIdx) {
         });
     }
 
-    // Init some background objects
     initBgObjects();
-
     gameState = 'playing';
 }
 
 function initBgObjects() {
-    // Add initial bg objects based on stage events
     if (!currentStage) return;
-
-    // Always add distant mountains
     for (let i = 0; i < 8; i++) {
         bgObjects.push({
-            type: 'mountain',
-            x: i * 80 + Math.random() * 40,
-            y: GROUND_Y + 10,
-            w: 30 + Math.random() * 40,
-            h: 20 + Math.random() * 30,
-            layer: 2,
-            color: '#2a2a3a'
+            type: 'mountain', x: i * 80 + Math.random() * 40, y: GROUND_Y + 10,
+            w: 30 + Math.random() * 40, h: 20 + Math.random() * 30,
+            layer: 2, color: '#2a2a3a'
         });
     }
-
-    // Add event objects
     if (currentStage.events.includes('earth')) {
-        bgObjects.push({
-            type: 'earth',
-            x: GAME_WIDTH - 60,
-            y: 60,
-            size: 22,
-            layer: 1
-        });
+        bgObjects.push({ type: 'earth', x: GAME_WIDTH - 60, y: 60, size: 22, layer: 1 });
     }
+}
+
+// --- Calculate jump distance to properly space obstacles ---
+// With gravity=0.027 and jumpForce=-2.2:
+// Time to peak = |jumpForce| / gravity = 2.2/0.027 ≈ 81 frames
+// Total air time ≈ 162 frames
+// At speed 0.35, obstacle moves 0.35*2*162 = 113px during one jump
+// So minimum gap between obstacles should be ~120px at stage 1
+function getMinObstacleGap() {
+    if (!currentStage) return 120;
+    const airTime = (Math.abs(JUMP_FORCE) / LUNAR_GRAVITY) * 2;
+    const obsSpeed = scrollSpeed * 2;
+    const jumpCover = obsSpeed * airTime * 0.6; // 60% of theoretical max (need margin)
+    return Math.max(100, jumpCover + 40); // +40 for safe landing
 }
 
 function jump() {
     if (gameState !== 'playing') return;
 
     if (!player.isJumping) {
-        // First jump from ground
         player.vy = JUMP_FORCE;
         player.isJumping = true;
         addDustBurst(player.x, GROUND_Y);
     } else if (player.boosterGauge > 0) {
-        // Air boost (double jump / booster)
-        player.vy = JUMP_FORCE * 0.8;
+        player.vy = JUMP_FORCE * 0.75;
         player.boosterGauge--;
         player.boosterRechargeTimer = 0;
         addBoostEffect(player.x, player.y);
@@ -1062,15 +1113,10 @@ function jump() {
 function addDustBurst(x, y) {
     for (let i = 0; i < 8; i++) {
         particles.push({
-            x: x + (Math.random() - 0.5) * 20,
-            y: y,
-            vx: (Math.random() - 0.5) * 2,
-            vy: -Math.random() * 1.5,
-            life: 30 + Math.random() * 20,
-            maxLife: 50,
-            size: 1 + Math.random() * 2,
-            color: '#8a8a9a',
-            type: 'dust'
+            x: x + (Math.random() - 0.5) * 20, y: y,
+            vx: (Math.random() - 0.5) * 1.5, vy: -Math.random() * 1,
+            life: 40 + Math.random() * 20, maxLife: 60,
+            size: 2 + Math.random() * 2, color: '#8a8a9a', type: 'dust'
         });
     }
 }
@@ -1078,15 +1124,10 @@ function addDustBurst(x, y) {
 function addBoostEffect(x, y) {
     for (let i = 0; i < 6; i++) {
         particles.push({
-            x: x + (Math.random() - 0.5) * 10,
-            y: y + 10,
-            vx: (Math.random() - 0.5) * 1,
-            vy: Math.random() * 2,
-            life: 20 + Math.random() * 10,
-            maxLife: 30,
-            size: 2 + Math.random() * 2,
-            color: '#00AAFF',
-            type: 'boost'
+            x: x + (Math.random() - 0.5) * 10, y: y + 10,
+            vx: (Math.random() - 0.5) * 1, vy: Math.random() * 1.5,
+            life: 25 + Math.random() * 10, maxLife: 35,
+            size: 2 + Math.random() * 3, color: '#00AAFF', type: 'boost'
         });
     }
 }
@@ -1094,15 +1135,10 @@ function addBoostEffect(x, y) {
 function addHitEffect(x, y) {
     for (let i = 0; i < 12; i++) {
         particles.push({
-            x: x,
-            y: y,
-            vx: (Math.random() - 0.5) * 4,
-            vy: (Math.random() - 0.5) * 4,
-            life: 20 + Math.random() * 15,
-            maxLife: 35,
-            size: 2 + Math.random() * 3,
-            color: '#FF4444',
-            type: 'hit'
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3,
+            life: 25 + Math.random() * 15, maxLife: 40,
+            size: 3 + Math.random() * 3, color: '#FF4444', type: 'hit'
         });
     }
     screenShake = 10;
@@ -1112,23 +1148,18 @@ function updateGame(dt) {
     if (!currentStage) return;
 
     gameTime += dt;
-    const spd = scrollSpeed * (1 + distance * 0.00005); // Gradual speed increase
+    const spd = scrollSpeed * (1 + distance * 0.00003);
 
-    // Update distance
     distance += spd * 0.5;
 
-    // Check stage clear
     if (distance >= currentStage.targetDist) {
         stageClear();
         return;
     }
 
-    // Update parallax
-    bgLayers.forEach(l => {
-        l.offset += spd * l.speed;
-    });
+    bgLayers.forEach(l => { l.offset += spd * l.speed; });
 
-    // Player physics - LUNAR GRAVITY (very floaty)
+    // Player physics - VERY FLOATY lunar gravity
     if (player.isJumping) {
         player.vy += LUNAR_GRAVITY;
         player.y += player.vy;
@@ -1141,63 +1172,48 @@ function updateGame(dt) {
         }
     }
 
-    // Booster recharge (slow)
+    // Booster recharge
     if (!player.isJumping && player.boosterGauge < player.maxBooster) {
         player.boosterRechargeTimer += dt;
-        if (player.boosterRechargeTimer > 3) { // 3 seconds to recharge one
+        if (player.boosterRechargeTimer > 3) {
             player.boosterGauge++;
             player.boosterRechargeTimer = 0;
         }
     }
 
-    // Invincibility timer
-    if (player.invincible > 0) {
-        player.invincible -= dt;
-    }
+    if (player.invincible > 0) player.invincible -= dt;
 
-    // Animation
     if (!player.isJumping) {
         player.animTimer += dt * spd * 2;
         player.animFrame = player.animTimer;
     }
 
-    // Spawn obstacles
+    // Spawn obstacles (respecting jump distance)
     if (Math.random() < currentStage.obstacleFreq * spd) {
         spawnObstacle();
     }
 
-    // Spawn energy
     if (Math.random() < currentStage.energyFreq) {
         spawnEnergy();
     }
 
-    // Spawn bg events
     spawnBgEvents(spd);
 
     // Update obstacles
     for (let i = obstacles.length - 1; i >= 0; i--) {
         obstacles[i].x -= spd * 2;
-        if (obstacles[i].x < -50) {
-            obstacles.splice(i, 1);
-            continue;
-        }
-
-        // Collision check
+        if (obstacles[i].x < -60) { obstacles.splice(i, 1); continue; }
         if (player.invincible <= 0 && checkCollision(player, obstacles[i])) {
             hitPlayer();
             obstacles.splice(i, 1);
         }
     }
 
-    // Update energy items
+    // Update energy
     for (let i = energyItems.length - 1; i >= 0; i--) {
         energyItems[i].x -= spd * 2;
         energyItems[i].frame++;
-        if (energyItems[i].x < -20) {
-            energyItems.splice(i, 1);
-            continue;
-        }
-
+        if (energyItems[i].x < -20) { energyItems.splice(i, 1); continue; }
         if (checkCollisionEnergy(player, energyItems[i])) {
             collectEnergy(energyItems[i]);
             energyItems.splice(i, 1);
@@ -1207,30 +1223,13 @@ function updateGame(dt) {
     // Update bg objects
     for (let i = bgObjects.length - 1; i >= 0; i--) {
         const obj = bgObjects[i];
-        if (obj.layer !== undefined) {
-            obj.x -= spd * bgLayers[obj.layer].speed;
-        }
-        if (obj.x < -100) {
-            bgObjects.splice(i, 1);
-        }
-        // Special updates
-        if (obj.type === 'meteor') {
-            obj.x -= 1.5;
-            obj.y += 1;
-            if (obj.y > GROUND_Y) {
-                addDustBurst(obj.x, GROUND_Y);
-                bgObjects.splice(i, 1);
-            }
-        }
-        if (obj.type === 'shooting_star') {
-            obj.x -= 4;
-            obj.y += 1.5;
-            obj.life--;
-            if (obj.life <= 0) bgObjects.splice(i, 1);
-        }
+        if (obj.layer !== undefined) obj.x -= spd * bgLayers[obj.layer].speed;
+        if (obj.x < -100) { bgObjects.splice(i, 1); continue; }
+        if (obj.type === 'meteor') { obj.x -= 1; obj.y += 0.7; if (obj.y > GROUND_Y) { addDustBurst(obj.x, GROUND_Y); bgObjects.splice(i, 1); } }
+        if (obj.type === 'shooting_star') { obj.x -= 3; obj.y += 1; obj.life--; if (obj.life <= 0) bgObjects.splice(i, 1); }
     }
 
-    // Update ground tiles
+    // Ground tiles
     for (let i = groundTiles.length - 1; i >= 0; i--) {
         groundTiles[i].x -= spd * 2;
         if (groundTiles[i].x < -25) {
@@ -1240,17 +1239,14 @@ function updateGame(dt) {
         }
     }
 
-    // Update particles
+    // Particles
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        if (p.type === 'dust') p.vy += 0.02;
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.type === 'dust') p.vy += 0.015;
         if (p.life <= 0) particles.splice(i, 1);
     }
 
-    // Screen shake decay
     if (screenShake > 0) screenShake *= 0.85;
     if (screenShake < 0.5) screenShake = 0;
 }
@@ -1258,39 +1254,34 @@ function updateGame(dt) {
 function spawnObstacle() {
     const types = ['rock', 'crater', 'puddle'];
     const type = types[Math.floor(Math.random() * types.length)];
+    const minGap = getMinObstacleGap();
 
-    let obs = {
-        x: GAME_WIDTH + 20,
-        y: GROUND_Y,
-        type: type,
-        width: 20,
-        height: 15
-    };
+    let obs = { x: GAME_WIDTH + 30, y: GROUND_Y, type: type, width: 20, height: 15 };
 
     switch(type) {
         case 'rock':
-            const size = 0.8 + Math.random() * 0.7;
+            const size = 0.9 + Math.random() * 0.5;
             obs.size = size;
-            obs.width = 16 * size;
-            obs.height = 14 * size;
+            obs.width = 20 * size * SPRITE_SCALE;
+            obs.height = 16 * size * SPRITE_SCALE;
             obs.y = GROUND_Y;
             break;
         case 'crater':
-            obs.width = 25 + Math.random() * 15;
-            obs.height = 6;
+            obs.width = (30 + Math.random() * 15) * SPRITE_SCALE;
+            obs.height = 8 * SPRITE_SCALE;
             obs.y = GROUND_Y + 2;
             break;
         case 'puddle':
-            obs.width = 25 + Math.random() * 15;
-            obs.height = 5;
+            obs.width = (30 + Math.random() * 15) * SPRITE_SCALE;
+            obs.height = 7 * SPRITE_SCALE;
             obs.y = GROUND_Y + 2;
             break;
     }
 
-    // Check minimum distance from last obstacle
+    // Check gap from last obstacle
     if (obstacles.length > 0) {
         const last = obstacles[obstacles.length - 1];
-        if (GAME_WIDTH + 20 - last.x < 80) return;
+        if (GAME_WIDTH + 30 - last.x < minGap) return;
     }
 
     obstacles.push(obs);
@@ -1298,93 +1289,43 @@ function spawnObstacle() {
 
 function spawnEnergy() {
     if (energyItems.length > 3) return;
-
     energyItems.push({
         x: GAME_WIDTH + 20,
-        y: GROUND_Y - 40 - Math.random() * 60,
-        frame: 0,
-        type: 'energy'
+        y: GROUND_Y - 50 - Math.random() * 60,
+        frame: 0, type: 'energy'
     });
 }
 
 function spawnBgEvents(spd) {
     if (!currentStage) return;
-
-    // Random background events
     if (Math.random() < 0.002) {
         const events = currentStage.events;
         const evt = events[Math.floor(Math.random() * events.length)];
-
         switch(evt) {
             case 'shooting_star':
-                bgObjects.push({
-                    type: 'shooting_star',
-                    x: GAME_WIDTH + 20,
-                    y: 20 + Math.random() * 100,
-                    len: 8 + Math.random() * 12,
-                    life: 60,
-                    layer: undefined
-                });
-                break;
+                bgObjects.push({ type: 'shooting_star', x: GAME_WIDTH + 20, y: 20 + Math.random() * 100, len: 8 + Math.random() * 12, life: 60, layer: undefined }); break;
             case 'meteor':
-                bgObjects.push({
-                    type: 'meteor',
-                    x: GAME_WIDTH + 50,
-                    y: -20,
-                    size: 4 + Math.random() * 4,
-                    layer: undefined
-                });
-                break;
+                bgObjects.push({ type: 'meteor', x: GAME_WIDTH + 50, y: -20, size: 4 + Math.random() * 4, layer: undefined }); break;
             case 'rocket':
-                bgObjects.push({
-                    type: 'rocket',
-                    x: GAME_WIDTH + 20,
-                    y: 50 + Math.random() * 100,
-                    layer: 1
-                });
-                break;
+                bgObjects.push({ type: 'rocket', x: GAME_WIDTH + 20, y: 50 + Math.random() * 100, layer: 1 }); break;
             case 'spaceship':
-                bgObjects.push({
-                    type: 'spaceship',
-                    x: GAME_WIDTH + 30,
-                    y: 30 + Math.random() * 80,
-                    layer: 1
-                });
-                break;
+                bgObjects.push({ type: 'spaceship', x: GAME_WIDTH + 30, y: 30 + Math.random() * 80, layer: 1 }); break;
             case 'planets':
-                bgObjects.push({
-                    type: 'planet',
-                    x: GAME_WIDTH + 30,
-                    y: 30 + Math.random() * 60,
-                    size: 8 + Math.random() * 12,
-                    color: ['#8B4513', '#4169E1', '#FF6347', '#9370DB'][Math.floor(Math.random()*4)],
-                    layer: 1
-                });
-                break;
+                bgObjects.push({ type: 'planet', x: GAME_WIDTH + 30, y: 30 + Math.random() * 60, size: 8 + Math.random() * 12, color: ['#8B4513', '#4169E1', '#FF6347', '#9370DB'][Math.floor(Math.random()*4)], layer: 1 }); break;
         }
     }
-
-    // Replenish mountains
     const maxMountainX = bgObjects.filter(o => o.type === 'mountain').reduce((max, o) => Math.max(max, o.x), 0);
     if (maxMountainX < GAME_WIDTH + 50) {
-        bgObjects.push({
-            type: 'mountain',
-            x: GAME_WIDTH + 20 + Math.random() * 40,
-            y: GROUND_Y + 10,
-            w: 30 + Math.random() * 40,
-            h: 20 + Math.random() * 30,
-            layer: 2,
-            color: '#2a2a3a'
-        });
+        bgObjects.push({ type: 'mountain', x: GAME_WIDTH + 20 + Math.random() * 40, y: GROUND_Y + 10, w: 30 + Math.random() * 40, h: 20 + Math.random() * 30, layer: 2, color: '#2a2a3a' });
     }
 }
 
 function checkCollision(player, obs) {
-    // Simple AABB
-    const px = player.x - 10;
-    const py = player.y - 24;
-    const pw = 20;
-    const ph = 28;
+    const S = SPRITE_SCALE;
+    const px = player.x - 10 * S;
+    const py = player.y - 26 * S;
+    const pw = 20 * S;
+    const ph = 30 * S;
 
     const ox = obs.x - obs.width/2;
     const oy = obs.y - obs.height;
@@ -1397,73 +1338,43 @@ function checkCollision(player, obs) {
 function checkCollisionEnergy(player, energy) {
     const dx = player.x - energy.x;
     const dy = (player.y - 12) - energy.y;
-    return Math.sqrt(dx*dx + dy*dy) < 20;
+    return Math.sqrt(dx*dx + dy*dy) < 25;
 }
 
 function hitPlayer() {
     player.lives--;
-    player.invincible = 2; // 2 seconds invincibility
+    player.invincible = 2;
     addHitEffect(player.x, player.y);
-
-    if (player.lives <= 0) {
-        gameOver();
-    }
+    if (player.lives <= 0) gameOver();
 }
 
 function collectEnergy(item) {
-    if (player.boosterGauge < player.maxBooster) {
-        player.boosterGauge++;
-    }
-    // Sparkle effect
+    if (player.boosterGauge < player.maxBooster) player.boosterGauge++;
     for (let i = 0; i < 8; i++) {
         particles.push({
-            x: item.x,
-            y: item.y,
-            vx: (Math.random() - 0.5) * 3,
-            vy: (Math.random() - 0.5) * 3,
-            life: 20,
-            maxLife: 20,
-            size: 2,
-            color: '#00FFAA',
-            type: 'sparkle'
+            x: item.x, y: item.y,
+            vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3,
+            life: 20, maxLife: 20, size: 3, color: '#00FFAA', type: 'sparkle'
         });
     }
 }
 
 function stageClear() {
     gameState = 'stageCleared';
-
-    // Save progress
     const stageIdx = currentStage.id - 1;
-    if (!saveData.clearedStages.includes(currentStage.id)) {
-        saveData.clearedStages.push(currentStage.id);
-    }
-    if (distance > saveData.highScores[stageIdx]) {
-        saveData.highScores[stageIdx] = Math.floor(distance);
-    }
+    if (!saveData.clearedStages.includes(currentStage.id)) saveData.clearedStages.push(currentStage.id);
+    if (distance > saveData.highScores[stageIdx]) saveData.highScores[stageIdx] = Math.floor(distance);
     saveData.totalDistance += Math.floor(distance);
-
-    // Unlock next stage
-    if (stageIdx + 1 < STAGES.length) {
-        STAGES[stageIdx + 1].unlocked = true;
-    }
-
-    // Badge
-    if (!saveData.badges.includes(currentStage.id)) {
-        saveData.badges.push(currentStage.id);
-    }
-
+    if (stageIdx + 1 < STAGES.length) STAGES[stageIdx + 1].unlocked = true;
+    if (!saveData.badges.includes(currentStage.id)) saveData.badges.push(currentStage.id);
     saveSave();
 }
 
 function gameOver() {
     gameState = 'gameOver';
-
-    // Save distance
+    gameOverFactIdx = Math.floor(Math.random() * MOON_FACTS.length);
     const stageIdx = currentStage.id - 1;
-    if (distance > saveData.highScores[stageIdx]) {
-        saveData.highScores[stageIdx] = Math.floor(distance);
-    }
+    if (distance > saveData.highScores[stageIdx]) saveData.highScores[stageIdx] = Math.floor(distance);
     saveData.totalDistance += Math.floor(distance);
     saveSave();
 }
@@ -1475,30 +1386,23 @@ function gameOver() {
 function drawGame() {
     if (!currentStage) return;
 
-    // Apply screen shake
     ctx.save();
     if (screenShake > 0) {
-        ctx.translate(
-            (Math.random() - 0.5) * screenShake,
-            (Math.random() - 0.5) * screenShake
-        );
+        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
     }
 
-    // Sky background
     const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
     grad.addColorStop(0, currentStage.bgColor);
     grad.addColorStop(1, '#1a1a3a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, GAME_WIDTH, GROUND_Y + 10);
 
-    // Stars (layer 0)
     for (let i = 0; i < bgStars.length; i++) {
         const s = bgStars[i];
         const sx = ((s.x - bgLayers[0].offset * s.speed * 0.2) % GAME_WIDTH + GAME_WIDTH) % GAME_WIDTH;
         drawStar(sx, s.y, s.size, gameTime * s.speed + s.phase);
     }
 
-    // Background objects (layer 1 - far)
     bgObjects.filter(o => o.layer === 1).forEach(obj => {
         switch(obj.type) {
             case 'earth': drawEarth(obj.x, obj.y, obj.size); break;
@@ -1506,19 +1410,14 @@ function drawGame() {
             case 'spaceship': drawSpaceship(obj.x, obj.y); break;
             case 'planet':
                 drawPixelCircle(Math.floor(obj.x), Math.floor(obj.y), obj.size, obj.color);
-                drawPixelCircle(Math.floor(obj.x)-2, Math.floor(obj.y)-2, obj.size-3, shadeColor(obj.color, 20));
                 break;
         }
     });
 
-    // Background objects (layer 2 - mountains)
     bgObjects.filter(o => o.layer === 2).forEach(obj => {
-        if (obj.type === 'mountain') {
-            drawMountain(obj.x, obj.y, obj.w, obj.h, obj.color);
-        }
+        if (obj.type === 'mountain') drawMountain(obj.x, obj.y, obj.w, obj.h, obj.color);
     });
 
-    // Floating bg objects (no layer)
     bgObjects.filter(o => o.layer === undefined).forEach(obj => {
         switch(obj.type) {
             case 'shooting_star': drawShootingStar(obj.x, obj.y, obj.len); break;
@@ -1529,39 +1428,31 @@ function drawGame() {
     // Ground
     ctx.fillStyle = currentStage.groundColor;
     ctx.fillRect(0, GROUND_Y + 5, GAME_WIDTH, GAME_HEIGHT - GROUND_Y);
-
-    // Ground surface line
     drawPixelRect(0, GROUND_Y + 5, GAME_WIDTH, 3, currentStage.groundAccent);
 
-    // Ground detail tiles
     groundTiles.forEach(tile => {
         ctx.fillStyle = `rgba(0,0,0,${0.1 + tile.shade})`;
         ctx.fillRect(Math.floor(tile.x), GROUND_Y + 10, 12, tile.height);
     });
 
-    // Small rocks on ground
     for (let i = 0; i < 15; i++) {
         const rx = ((i * 37 + 10 - bgLayers[3].offset * 0.5) % (GAME_WIDTH + 40)) - 20;
-        drawPixelRect(Math.floor(rx), GROUND_Y + 8 + (i % 3) * 4, 2 + (i % 2), 1 + (i % 2), '#3a3a4a');
+        drawPixelRect(Math.floor(rx), GROUND_Y + 8 + (i % 3) * 4, 3, 2, '#3a3a4a');
     }
 
     // Obstacles
     obstacles.forEach(obs => {
         switch(obs.type) {
             case 'rock': drawRock(obs.x, obs.y, obs.size); break;
-            case 'crater': drawCrater(obs.x, obs.y, obs.width); break;
-            case 'puddle': drawPuddle(obs.x, obs.y, obs.width); break;
+            case 'crater': drawCrater(obs.x, obs.y, obs.width / SPRITE_SCALE); break;
+            case 'puddle': drawPuddle(obs.x, obs.y, obs.width / SPRITE_SCALE); break;
         }
     });
 
-    // Energy items
-    energyItems.forEach(e => {
-        drawEnergy(e.x, e.y, e.frame);
-    });
+    energyItems.forEach(e => { drawEnergy(e.x, e.y, e.frame); });
 
     // Player
     if (player.invincible > 0) {
-        // Blink when invincible
         if (Math.sin(player.invincible * 15) > 0) {
             const charType = CHARACTERS.find(c => c.id === saveData.selectedChar)?.type || 'rover';
             drawRover(player.x, player.y, player.animFrame, charType);
@@ -1571,11 +1462,11 @@ function drawGame() {
         drawRover(player.x, player.y, player.animFrame, charType);
     }
 
-    // Jump indicator (shadow on ground when jumping)
+    // Jump shadow
     if (player.isJumping) {
-        const shadowScale = 1 - (GROUND_Y - player.y) / 200;
-        ctx.globalAlpha = 0.3 * shadowScale;
-        drawPixelRect(player.x - 8 * shadowScale, GROUND_Y + 6, 16 * shadowScale, 3, '#000000');
+        const shadowScale = Math.max(0.2, 1 - (GROUND_Y - player.y) / 250);
+        ctx.globalAlpha = 0.25 * shadowScale;
+        drawPixelRect(player.x - 10 * shadowScale, GROUND_Y + 6, 20 * shadowScale, 3, '#000000');
         ctx.globalAlpha = 1;
     }
 
@@ -1588,7 +1479,6 @@ function drawGame() {
 
     ctx.restore();
 
-    // HUD (not affected by shake)
     drawHUD();
 }
 
@@ -1596,10 +1486,7 @@ function shadeColor(color, amount) {
     let r = parseInt(color.slice(1,3), 16) + amount;
     let g = parseInt(color.slice(3,5), 16) + amount;
     let b = parseInt(color.slice(5,7), 16) + amount;
-    r = Math.max(0, Math.min(255, r));
-    g = Math.max(0, Math.min(255, g));
-    b = Math.max(0, Math.min(255, b));
-    return `rgb(${r},${g},${b})`;
+    return `rgb(${Math.max(0,Math.min(255,r))},${Math.max(0,Math.min(255,g))},${Math.max(0,Math.min(255,b))})`;
 }
 
 // ============================================
@@ -1607,7 +1494,6 @@ function shadeColor(color, amount) {
 // ============================================
 
 function handleInput(x, y) {
-    // Convert screen coords to game coords
     const gx = (x - offsetX) / scale;
     const gy = (y - offsetY) / scale;
 
@@ -1620,7 +1506,6 @@ function handleInput(x, y) {
         case 'stageSelect':
         case 'stageCleared':
         case 'gameOver':
-            // Check button clicks
             let buttonHit = false;
             for (const btn of uiButtons) {
                 if (gx >= btn.x && gx <= btn.x + btn.w && gy >= btn.y && gy <= btn.y + btn.h) {
@@ -1629,15 +1514,10 @@ function handleInput(x, y) {
                     break;
                 }
             }
-            // If no button hit, allow tap-to-advance on certain screens
             if (!buttonHit) {
-                if (gameState === 'charSelect') {
-                    gameState = 'stageSelect';
-                } else if (gameState === 'stageCleared') {
-                    gameState = 'stageSelect';
-                } else if (gameState === 'gameOver') {
-                    gameState = 'stageSelect';
-                }
+                if (gameState === 'charSelect') gameState = 'stageSelect';
+                else if (gameState === 'stageCleared') gameState = 'stageSelect';
+                else if (gameState === 'gameOver') gameState = 'stageSelect';
             }
             break;
 
@@ -1654,21 +1534,11 @@ function handleButton(btn) {
             saveSave();
             gameState = 'stageSelect';
             break;
-        case 'toStageSelect':
-            gameState = 'stageSelect';
-            break;
-        case 'toCharSelect':
-            gameState = 'charSelect';
-            break;
-        case 'startStage':
-            initGame(btn.data);
-            break;
-        case 'retry':
-            if (currentStage) initGame(currentStage.id - 1);
-            break;
-        case 'back':
-            gameState = 'title';
-            break;
+        case 'toStageSelect': gameState = 'stageSelect'; break;
+        case 'toCharSelect': gameState = 'charSelect'; break;
+        case 'startStage': initGame(btn.data); break;
+        case 'retry': if (currentStage) initGame(currentStage.id - 1); break;
+        case 'back': gameState = 'title'; break;
     }
 }
 
@@ -1684,19 +1554,17 @@ touchArea.addEventListener('mousedown', (e) => {
     handleInput(e.clientX, e.clientY);
 });
 
-// Keyboard events - using window instead of document for broader capture
+// Keyboard events
 window.addEventListener('keydown', function(e) {
     const code = e.code;
     const key = e.key;
 
-    // Prevent default for game keys
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(code)) {
         e.preventDefault();
     }
 
     switch (gameState) {
         case 'title':
-            // Any key starts
             gameState = 'charSelect';
             break;
 
@@ -1707,11 +1575,8 @@ window.addEventListener('keydown', function(e) {
                 const unlockedChars = CHARACTERS.filter(c => saveData.totalDistance >= c.unlockDist);
                 const currentIdx = unlockedChars.findIndex(c => c.id === saveData.selectedChar);
                 let newIdx;
-                if (code === 'ArrowRight') {
-                    newIdx = (currentIdx + 1) % unlockedChars.length;
-                } else {
-                    newIdx = (currentIdx - 1 + unlockedChars.length) % unlockedChars.length;
-                }
+                if (code === 'ArrowRight') newIdx = (currentIdx + 1) % unlockedChars.length;
+                else newIdx = (currentIdx - 1 + unlockedChars.length) % unlockedChars.length;
                 saveData.selectedChar = unlockedChars[newIdx].id;
                 saveSave();
             } else if (code === 'Escape') {
@@ -1727,7 +1592,6 @@ window.addEventListener('keydown', function(e) {
                 if (num >= 1 && num <= 5 && STAGES[num-1].unlocked) {
                     initGame(num - 1);
                 } else if (code === 'Enter' || code === 'Space') {
-                    // Start first unlocked stage
                     const firstUnlocked = STAGES.findIndex(s => s.unlocked && !saveData.clearedStages.includes(s.id));
                     const idx = firstUnlocked >= 0 ? firstUnlocked : 0;
                     if (STAGES[idx].unlocked) initGame(idx);
@@ -1736,15 +1600,11 @@ window.addEventListener('keydown', function(e) {
             break;
 
         case 'playing':
-            if (code === 'Space' || code === 'ArrowUp') {
-                jump();
-            }
+            if (code === 'Space' || code === 'ArrowUp') jump();
             break;
 
         case 'stageCleared':
-            if (code === 'Enter' || code === 'Space') {
-                gameState = 'stageSelect';
-            }
+            if (code === 'Enter' || code === 'Space') gameState = 'stageSelect';
             break;
 
         case 'gameOver':
@@ -1755,35 +1615,29 @@ window.addEventListener('keydown', function(e) {
             }
             break;
     }
-}, true);  // useCapture = true to get events before anything else
+}, true);
 
 // ============================================
-// RESIZE HANDLING
+// RESIZE
 // ============================================
 
 function resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
-
-    // Calculate scale to fit
     const scaleX = w / GAME_WIDTH;
     const scaleY = h / GAME_HEIGHT;
     scale = Math.min(scaleX, scaleY);
 
     canvas.width = GAME_WIDTH;
     canvas.height = GAME_HEIGHT;
-
-    // CSS scaling
     canvas.style.width = `${GAME_WIDTH * scale}px`;
     canvas.style.height = `${GAME_HEIGHT * scale}px`;
 
     offsetX = (w - GAME_WIDTH * scale) / 2;
     offsetY = (h - GAME_HEIGHT * scale) / 2;
-
     canvas.style.marginLeft = `${offsetX}px`;
     canvas.style.marginTop = `${offsetY}px`;
 
-    // Disable smoothing for pixel art
     ctx.imageSmoothingEnabled = false;
 }
 
@@ -1800,35 +1654,15 @@ function gameLoop(timestamp) {
     const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
     lastTime = timestamp;
 
-    // Clear
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Update & Draw based on state
     switch (gameState) {
-        case 'title':
-            updateTitle(dt);
-            drawTitle();
-            break;
-        case 'charSelect':
-            gameTime += dt;
-            drawCharSelect();
-            break;
-        case 'stageSelect':
-            gameTime += dt;
-            drawStageSelect();
-            break;
-        case 'playing':
-            updateGame(dt);
-            drawGame();
-            break;
-        case 'stageCleared':
-            gameTime += dt;
-            drawStageClear();
-            break;
-        case 'gameOver':
-            gameTime += dt;
-            drawGameOver();
-            break;
+        case 'title': updateTitle(dt); drawTitle(); break;
+        case 'charSelect': gameTime += dt; drawCharSelect(); break;
+        case 'stageSelect': gameTime += dt; drawStageSelect(); break;
+        case 'playing': updateGame(dt); drawGame(); break;
+        case 'stageCleared': gameTime += dt; drawStageClear(); break;
+        case 'gameOver': gameTime += dt; drawGameOver(); break;
     }
 
     requestAnimationFrame(gameLoop);
@@ -1836,7 +1670,6 @@ function gameLoop(timestamp) {
 
 // Initialize
 initStars();
-// Focus touch area for keyboard input on PC
 touchArea.focus();
 touchArea.addEventListener('click', () => touchArea.focus());
 requestAnimationFrame(gameLoop);
