@@ -28,7 +28,7 @@ const STAGES = [
         name: 'Mare Tranquillitatis',
         nameKo: '고요의 바다',
         description: '아폴로 11호 착륙 지점. 비교적 평탄한 지형.',
-        speed: 1.5,
+        speed: 0.75,
         obstacleFreq: 0.012,
         energyFreq: 0.008,
         boosterCount: 5,
@@ -44,7 +44,7 @@ const STAGES = [
         name: 'Oceanus Procellarum',
         nameKo: '폭풍의 대양',
         description: '달에서 가장 큰 바다. 먼지폭풍이 가끔 발생.',
-        speed: 2.0,
+        speed: 1.0,
         obstacleFreq: 0.018,
         energyFreq: 0.006,
         boosterCount: 4,
@@ -60,7 +60,7 @@ const STAGES = [
         name: 'Mare Imbrium',
         nameKo: '비의 바다',
         description: '거대한 크레이터 지역. 운석 낙하 주의!',
-        speed: 2.5,
+        speed: 1.25,
         obstacleFreq: 0.022,
         energyFreq: 0.005,
         boosterCount: 3,
@@ -76,7 +76,7 @@ const STAGES = [
         name: 'Tycho Crater',
         nameKo: '티코 크레이터',
         description: '험난한 크레이터 지대. 화산 활동 흔적!',
-        speed: 3.0,
+        speed: 1.5,
         obstacleFreq: 0.028,
         energyFreq: 0.004,
         boosterCount: 2,
@@ -92,7 +92,7 @@ const STAGES = [
         name: 'Mare Frigoris',
         nameKo: '추위의 바다',
         description: '달의 극지방. 극한의 환경에서 생존하라!',
-        speed: 3.5,
+        speed: 1.75,
         obstacleFreq: 0.035,
         energyFreq: 0.003,
         boosterCount: 1,
@@ -1676,9 +1676,44 @@ document.addEventListener('keydown', (e) => {
         }
     }
     if (e.code === 'Enter') {
+        e.preventDefault();
         if (gameState === 'title') {
             gameState = 'charSelect';
+        } else if (gameState === 'charSelect') {
+            gameState = 'stageSelect';
+        } else if (gameState === 'stageCleared') {
+            gameState = 'stageSelect';
+        } else if (gameState === 'gameOver') {
+            if (currentStage) initGame(currentStage.id - 1);
         }
+    }
+    // Number keys 1-5 to start stages (from stage select screen)
+    if (gameState === 'stageSelect') {
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 5 && STAGES[num-1].unlocked) {
+            initGame(num - 1);
+        }
+    }
+    // Arrow keys for character select
+    if (gameState === 'charSelect') {
+        if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+            e.preventDefault();
+            const unlockedChars = CHARACTERS.filter(c => saveData.totalDistance >= c.unlockDist);
+            const currentIdx = unlockedChars.findIndex(c => c.id === saveData.selectedChar);
+            let newIdx;
+            if (e.code === 'ArrowRight') {
+                newIdx = (currentIdx + 1) % unlockedChars.length;
+            } else {
+                newIdx = (currentIdx - 1 + unlockedChars.length) % unlockedChars.length;
+            }
+            saveData.selectedChar = unlockedChars[newIdx].id;
+            saveSave();
+        }
+    }
+    // Escape to go back
+    if (e.code === 'Escape') {
+        if (gameState === 'charSelect') gameState = 'title';
+        else if (gameState === 'stageSelect') gameState = 'charSelect';
     }
 });
 
